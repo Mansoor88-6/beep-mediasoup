@@ -4,39 +4,19 @@ import { UserAddOutlined } from '@ant-design/icons';
 import { InputLength } from 'types';
 import { ScalableInput } from 'components';
 import { useAppDispatch } from 'appRedux/store';
-import { initFormFields, resetFormFields } from 'utils';
-import { IChangePasswordFormData, IUserModalProps } from '../types';
+import { resetFormFields } from 'utils';
+import { IChangePasswordFormData, IChangePasswordProps } from '../types';
 import { changePassword } from 'appRedux/actions/userAction';
 import { IChangePasswordFormActionData } from 'types/ReduxTypes/user/action';
 /**
  * ChangePassword component
- * @param {IUserModalProps} props - props
+ * @param {IChangePasswordProps} props - props
  * @returns {React.FC} - returns
  */
-const ChangePassword: React.FC<IUserModalProps> = (props: IUserModalProps) => {
-  const { dataSet, setDataSet } = props;
-  const [form] = Form.useForm();
+const ChangePassword: React.FC<IChangePasswordProps> = (props: IChangePasswordProps) => {
+  const { form, dataSet, handleClose } = props;
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-
-  React.useEffect(() => {
-    if (dataSet) {
-      if (dataSet._id) {
-        initFormFields(dataSet as unknown as Record<string, unknown>, form);
-      }
-    }
-  }, [dataSet]);
-
-  /**
-   * Handle close the modal
-   *
-   * @returns {void}
-   **/
-  const handleClose = () => {
-    props.setModalVisibility(false);
-    resetFormFields(form);
-    setDataSet(null);
-  };
 
   /**
    * Handle submit the form

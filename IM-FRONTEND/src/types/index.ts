@@ -4,6 +4,11 @@ export enum UserRoles {
   SubClient = 'subclient'
 }
 
+export enum UserStatus {
+  Active = 'true',
+  Inactive = 'false'
+}
+
 export enum Environment {
   Production = 'production',
   Development = 'development',
@@ -27,7 +32,8 @@ export enum InputLength {
   EMAIL_LENGTH = 100,
   USERNAME_LENGTH = 100,
   PASSWORD_LENGTH = 100,
-  DESCRIPTION_LENGTH = 500
+  DESCRIPTION_LENGTH = 500,
+  TABLE_TOOLBAR_SEARCH_LENGTH = 100
 }
 
 export interface IRandomColorProps {

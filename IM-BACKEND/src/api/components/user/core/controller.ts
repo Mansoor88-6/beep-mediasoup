@@ -239,8 +239,8 @@ export default class UserController {
     const { role, id } = req.user;
     const { clientId } = req.params;
     const zero = 0;
-    const { firstName, lastName, email, address, organization, activate } =
-      req.body;
+    console.log(clientId, id, req.body);
+    const { username, userRole, email, activate } = req.body;
     const lowerCaseEmail = UtilityService.convertToLowercase(email);
 
     try {
@@ -287,9 +287,9 @@ export default class UserController {
        */
       if (
         role !== UserRole.Admin &&
-        user &&
-        user.created_by?.toString() !== id &&
-        user.id !== id
+        user
+        // user.created_by?.toString() !== id &&
+        // user.id !== id
       ) {
         logger.info(
           "Unauthorized attempt to update user otp status",
@@ -311,21 +311,17 @@ export default class UserController {
           clientId,
           {
             $set: {
-              first_name: firstName,
-              last_name: lastName,
-              address: address,
-              organization: organization,
+              username: username,
               email: lowerCaseEmail,
               activate: activate,
+              role: userRole,
               failed_login_attempts:
                 activate === true ? zero : user.failed_login_attempts,
             },
           },
           { runValidators: true, new: true }
         )
-        .select(
-          "first_name last_name address organization subscription activate email role avatar"
-        )
+        .select("username activate email role avatar")
         .session(session);
 
       data = modifiedUser;

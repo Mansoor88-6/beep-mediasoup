@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import CustomTable from '../../../components/table';
-import { Button, Form } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import { Button, Col, Form, Row } from 'antd';
+import { humanize } from 'utils';
+import { ZERO } from 'constant';
+import ScalableCard from 'components/card';
+import { IUser } from 'types/ReduxTypes/user';
+import UserModal from './components/UserModal';
+import { EditOutlined } from '@ant-design/icons';
+import { CustomTable, TableToolBar, TableColumns } from 'components';
+// Redux
 import { useSelector } from 'react-redux';
+import { useAppDispatch } from 'appRedux/store';
 import { UserSelector } from 'appRedux/reducers';
 import { deleteUsers, getUsers } from 'appRedux/actions/userAction';
-import { IUserColumns } from 'components/tableColums/index';
-import { humanize } from 'utils';
-import UserModal from './UserModal';
-import { IUser } from 'types/ReduxTypes/user';
-import { useAppDispatch } from 'appRedux/store';
-import { EditOutlined } from '@ant-design/icons';
-import { IUserTable } from 'components/tableColums/types';
 /**
  * Render Users Management Page
  *
@@ -19,17 +20,23 @@ import { IUserTable } from 'components/tableColums/types';
 const AdminUsersView = () => {
   const [form] = Form.useForm();
   const dispatch = useAppDispatch();
-  const [loader, setLoader] = useState(false);
-  const [modalVisibility, setModalVisibility] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [dataSet, setDataSet] = useState<IUser | null | undefined>(null);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const { users, usersLoading } = useSelector(UserSelector);
-  const [filteredUsers, setFilteredUsers] = useState<IUser[]>([]);
+  const [refreshLoader, setRefreshLoader] = useState(false);
+  const [modalVisibility, setModalVisibility] = useState(false);
+  const [dataSet, setDataSet] = useState<IUser | null | undefined>(null);
+
+  const [deleteBtnDisabled, setDeleteBtnDisabled] = useState(true);
+  const [search, setSearch] = useState<string>('');
+  const searchRef = useRef(search);
 
   useEffect(() => {
     dispatch(getUsers());
   }, []);
+
+  useEffect(() => {
+    searchRef.current = search;
+  }, [search]);
 
   /**
    * Show the modal
@@ -47,39 +54,12 @@ const AdminUsersView = () => {
    * @returns {void}
    **/
   const handleRefresh = async () => {
-    setLoader(true);
+    setRefreshLoader(true);
     await dispatch(getUsers());
-    setLoader(false);
+    setRefreshLoader(false);
   };
 
-  /**
-   * Handle search in table
-   *
-   * @param searchText - Search text
-   * @returns {void}
-   */
-  const handleSearch = (searchText: string) => {
-    const filteredUsers = users?.filter((user) => {
-      return user?.username?.toLowerCase().includes(searchText.toLowerCase());
-    });
-    setFilteredUsers(filteredUsers || []);
-  };
-
-  /**
-   * Handle selected rows
-   *
-   * @param selectedRows - Array of selected row keys
-   * @returns {void}
-   */
-  const handleSelection = (selectedRows: IUserTable[]) => {
-    setSelectedIds(
-      selectedRows.map((row: IUserTable) => {
-        return row.key as string;
-      })
-    );
-  };
-
-  const tableData = filteredUsers?.map((user) => {
+  const tableData = users?.map((user) => {
     return {
       key: user._id,
       name: humanize(user.username),
@@ -102,38 +82,68 @@ const AdminUsersView = () => {
   });
 
   return (
-    <>
-      <UserModal
-        editMode={editMode}
-        modalVisibility={modalVisibility}
-        setModalVisibility={setModalVisibility}
-        dataSet={dataSet}
-        setDataSet={setDataSet}
-      />
-      <Form form={form} layout="vertical">
-        <CustomTable
-          columns={IUserColumns}
-          dataSource={tableData}
-          loading={usersLoading || loader}
-          enableSelection
-          onSelectionChange={handleSelection}
-          toolbarProps={{
-            onSearch: handleSearch,
-            onRefresh: handleRefresh,
-            onDelete:
-              selectedIds.length > 0
-                ? async () => {
-                    setLoader(true);
-                    await dispatch(deleteUsers(selectedIds));
-                    await dispatch(getUsers());
-                    setSelectedIds([]);
-                    setLoader(false);
-                  }
-                : undefined
-          }}
+    <Row>
+      <Col span={24}>
+        <UserModal
+          editMode={editMode}
+          modalVisibility={modalVisibility}
+          setModalVisibility={setModalVisibility}
+          dataSet={dataSet}
+          setDataSet={setDataSet}
         />
-      </Form>
-    </>
+        <ScalableCard limitwidth={false}>
+          <Form form={form} layout="vertical">
+            <TableToolBar
+              search={true}
+              refresh={true}
+              add={true}
+              deleteAll={true}
+              deleteBtnDisabled={deleteBtnDisabled}
+              deleteEventListener={async () => {
+                await dispatch(deleteUsers(form.getFieldValue('users')));
+                form.resetFields();
+                dispatch(getUsers());
+                setDeleteBtnDisabled(true);
+              }}
+              searchFieldHandler={(e) => {
+                setSearch(e.target.value);
+              }}
+              refreshEventListener={handleRefresh}
+              addEventListener={() => {
+                return showModal('add');
+              }}
+            />
+            <br />
+            <Form
+              onChange={() => {
+                setDeleteBtnDisabled(
+                  !(
+                    Array.isArray(form.getFieldValue('users')) &&
+                    form.getFieldValue('users').length > ZERO
+                  )
+                );
+              }}
+              layout="vertical"
+              form={form}>
+              <Form.Item name="users" hidden initialValue={[]} />
+
+              <CustomTable
+                form={{
+                  formData: form,
+                  key: 'users'
+                }}
+                dataSource={tableData}
+                search={search}
+                loading={refreshLoader || usersLoading}
+                columns={TableColumns.IUserColumns}
+                hasSelectedTitle={'Users'}
+                setDeleteBtnDisabled={setDeleteBtnDisabled}
+              />
+            </Form>
+          </Form>
+        </ScalableCard>
+      </Col>
+    </Row>
   );
 };
 

@@ -18,13 +18,32 @@ const userSlice = createSlice({
     getUsersFailure: (state) => {
       state.usersLoading = false;
     },
+    getUserUpdateSuccess: (state, { payload }: PayloadAction<IUser>) => {
+      const index = state.users.findIndex((item) => {
+        return item._id === payload._id;
+      });
+      if (index !== -1) {
+        state.users[index] = { ...state.users[index], ...payload };
+      } else {
+        state.users = [payload, ...state.users];
+      }
+    },
+    getUserUpdateFailure: (state) => {
+      state.usersLoading = false;
+    },
     userReset: () => {
       return initialState;
     }
   }
 });
 
-export const { userReset, getUsersFailure, getUsersSuccess } = userSlice.actions;
+export const {
+  userReset,
+  getUsersFailure,
+  getUsersSuccess,
+  getUserUpdateSuccess,
+  getUserUpdateFailure
+} = userSlice.actions;
 
 export default userSlice.reducer;
 

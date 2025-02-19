@@ -31,12 +31,12 @@ import {
   SettingFilled,
   FileImageOutlined,
   FileOutlined,
-  AudioOutlined
+  AudioOutlined,
+  VideoCameraFilled
 } from '@ant-design/icons';
 import Message from './components/chats/Message';
 import ChatBgImg from 'assets/imgs/chat-bg.png';
 import { useAppDispatch } from 'appRedux/store';
-import { PlusSvg, GroupSvg, Home2Svg } from 'assets/svgs';
 import { ScalableInput, ScalableSegment } from 'components';
 import Chats from './components/chats/Chats';
 import { useSelector } from 'react-redux';
@@ -55,10 +55,9 @@ import Groups from './components/groups/GroupList';
 import CallModal from './components/call/CallModal';
 import { FOUR, THREE, ZERO } from 'constant';
 import NewGroupModal from './components/groups/NewGroupModal';
-import { MessageSquarePlus, MessagesSquare } from 'lucide-react';
+import { Home, MessagesSquare } from 'lucide-react';
 import { ProfileNav } from 'shared';
 import Calls from './components/call/call';
-import { getRandomColor } from 'utils';
 import { setCallRoom } from 'appRedux/reducers/callReducer';
 import CallService from 'services/CallService';
 import MediaMessage from './components/media/MediaMessage';
@@ -585,7 +584,7 @@ const Messaging = () => {
   return (
     <SearchProvider>
       <Layout className="h-screen bg-white">
-        <Sider style={{ background: '#CEF6DB' }} width={55}>
+        <Sider style={{ background: '#40916c' }} width={55}>
           <div className="h-screen flex flex-col items-center justify-between">
             {/* profile top */}
             <div className="mt-2">
@@ -594,21 +593,24 @@ const Messaging = () => {
             </div>
             {/* sider departments */}
             <Button
-              className="bg-slate-400 bg-opacity-25"
+              className="bg-slate-400 bg-opacity-35 hover:bg-black hover:opacity-25"
               type="link"
-              icon={<Home2Svg className="h-5 w-5" />}
+              icon={<Home className="h-5 w-5 text-white" />}
             />
+            <Tooltip title="Video Conference" placement="right">
+              <Button
+                className="bg-slate-400 bg-opacity-35 mt-2 hover:bg-black hover:opacity-25"
+                type="link"
+                icon={<VideoCameraFilled className="h-5 w-5 text-white ml-1" />}
+              />
+            </Tooltip>
             <div className="h-screen flex flex-col items-center justify-center">
               {['T', 'F', 'I', 'M', 'E', 'W', 'S', 'H'].map((letter, i) => {
                 return (
                   <Avatar
                     shape="square"
-                    style={{
-                      color: getRandomColor({ luminosity: 'dark' }),
-                      background: '#ffecf0'
-                    }}
                     key={i}
-                    className={`text-lg mb-2 font-bold cursor-pointer hover:bg-gray-300`}>
+                    className={`text-lg mb-2 bg-light font-bold cursor-pointer hover:opacity-50`}>
                     {letter}
                   </Avatar>
                 );
@@ -617,17 +619,15 @@ const Messaging = () => {
             <Button
               size="large"
               type="link"
-              icon={<PlusSvg className="h-5 w-5 hover:rotate-90 transition-all" />}
+              icon={<PlusOutlined className="h-4 w-4 text-white hover:rotate-90 transition-all" />}
             />
 
             <div className="flex flex-col">
-              <Button size="large" type="link" icon={<GroupSvg className="h-5 w-5" />} />
+              {/* <Button size="large" type="link" icon={<GroupSvg className="h-5 w-5 text-white" />} /> */}
               <Button
                 size="large"
                 type="link"
-                icon={
-                  <SettingFilled className="text-[#488D41] hover:text-green-800 hover:rotate-45 transition-all" />
-                }
+                icon={<SettingFilled className="text-white hover:rotate-45 transition-all" />}
               />
             </div>
           </div>
@@ -690,9 +690,9 @@ const Messaging = () => {
                 className="absolute"
                 style={{ insetInlineEnd: 10 }}
                 icon={<PlusOutlined className="text-[green] rounded-full" />}>
-                <Tooltip title="New Chat" placement="left">
+                {/* <Tooltip title="New Chat" placement="left">
                   <FloatButton icon={<MessageSquarePlus size={20} />} />
-                </Tooltip>
+                </Tooltip> */}
                 <Tooltip title="New Group" placement="left">
                   <FloatButton
                     icon={

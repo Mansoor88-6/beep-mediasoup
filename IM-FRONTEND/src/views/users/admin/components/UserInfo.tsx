@@ -1,58 +1,51 @@
 import React, { useState } from 'react';
 import { Form, Row, Col, Button } from 'antd';
+import { InputLength, UserRoles } from 'types';
 import { UserAddOutlined } from '@ant-design/icons';
-import { InputLength } from 'types';
-import { ScalableInput } from 'components';
+import { ScalableInput, ScalableSelect } from 'components';
+import { ICreateUserFormData, IUserInfoProps } from '../types';
 import { useAppDispatch } from 'appRedux/store';
-import { initFormFields, resetFormFields } from 'utils';
-import { IChangePasswordFormData, IUserModalProps } from '../types';
-import { changePassword } from 'appRedux/actions/userAction';
-import { IChangePasswordFormActionData } from 'types/ReduxTypes/user/action';
+import { updateUser } from 'appRedux/actions/userAction';
+import { register } from 'appRedux/actions/authAction';
 /**
  * UserInfo component
- * @param {IUserModalProps} props - props
+ * @param {IUserInfoProps} props - props
  * @returns {React.FC} - returns
  */
-const UserInfo: React.FC<IUserModalProps> = (props: IUserModalProps) => {
-  const { dataSet, setDataSet } = props;
-  const [form] = Form.useForm();
+const UserInfo: React.FC<IUserInfoProps> = (props: IUserInfoProps) => {
+  const { form, dataSet, handleClose } = props;
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
-
-  React.useEffect(() => {
-    if (dataSet) {
-      if (dataSet._id) {
-        initFormFields(dataSet as unknown as Record<string, unknown>, form);
-      }
-    }
-  }, [dataSet]);
-
-  /**
-   * Handle close the modal
-   *
-   * @returns {void}
-   **/
-  const handleClose = () => {
-    props.setModalVisibility(false);
-    resetFormFields(form);
-    setDataSet(null);
-  };
 
   /**
    * Handle submit the form
    *
    * @returns {void}
    **/
-  const handleSubmit = async (values: IChangePasswordFormData) => {
+  const handleSubmit = async (values: ICreateUserFormData) => {
     setLoading(true);
-    const formData: IChangePasswordFormActionData = {
-      clientId: dataSet?._id || '',
-      newPassword: values.newPassword,
-      confirmPassword: values.confirmPassword
+    const updateData = {
+      username: values.username,
+      email: values.email,
+      userRole: values.role,
+      activate: values.activate,
+      _id: values._id
     };
-    if ((await dispatch(changePassword(formData))).payload) {
-      resetFormFields(form);
-      handleClose();
+    if (dataSet?._id) {
+      console.log(updateData);
+      if ((await dispatch(updateUser(updateData))).payload) {
+        handleClose();
+      }
+    } else {
+      const registerData = {
+        username: values.username,
+        email: values.email,
+        password: values.password,
+        confirmPassword: values.confirmPassword
+      };
+      if ((await dispatch(register(registerData))).payload) {
+        handleClose();
+      }
     }
     setLoading(false);
   };
@@ -64,7 +57,6 @@ const UserInfo: React.FC<IUserModalProps> = (props: IUserModalProps) => {
       name: 'username',
       placeholder: 'Username',
       maxLength: InputLength.USERNAME_LENGTH,
-      disabled: props.editMode,
       required: false,
       rules: [
         {
@@ -83,7 +75,6 @@ const UserInfo: React.FC<IUserModalProps> = (props: IUserModalProps) => {
       name: 'email',
       placeholder: 'Email',
       maxLength: InputLength.EMAIL_LENGTH,
-      disabled: props.editMode,
       rules: [
         {
           required: true,
@@ -94,21 +85,100 @@ const UserInfo: React.FC<IUserModalProps> = (props: IUserModalProps) => {
           message: `Invalid Email`
         }
       ]
-    }
+    },
+    {
+      id: 'role',
+      type: 'select',
+      name: 'role',
+      placeholder: 'Role',
+      options: [
+        { label: 'Admin', value: UserRoles.Admin },
+        { label: 'Client', value: UserRoles.Client }
+      ].map((role) => {
+        return {
+          label: role.label,
+          value: role.value
+        };
+      })
+    },
+    {
+      id: 'activate',
+      type: 'select',
+      name: 'activate',
+      placeholder: 'Status',
+      options: [
+        { label: 'Activate', value: true },
+        { label: 'Deactivate', value: false }
+      ].map((status) => {
+        return {
+          label: status.label,
+          value: status.value
+        };
+      }) as any
+    },
+    // Only show password fields when creating a new user
+    ...(!dataSet?._id && !props.editMode
+      ? [
+          {
+            type: 'password',
+            password: true,
+            id: 'password',
+            name: 'password',
+            placeholder: 'Password',
+            hasFeedback: true,
+            maxLength: InputLength.PASSWORD_LENGTH
+          },
+          {
+            type: 'password',
+            password: true,
+            id: 'confirmPassword',
+            name: 'confirmPassword',
+            placeholder: 'Confirm Password',
+            dependencies: ['password'],
+            hasFeedback: true,
+            maxLength: InputLength.PASSWORD_LENGTH
+          }
+        ]
+      : [])
   ];
 
   return (
     <Form layout="vertical" form={form} onFinish={handleSubmit}>
-      <Form.Item name="clientId" initialValue={dataSet?._id} hidden></Form.Item>
+      <Form.Item name="_id" initialValue={dataSet?._id} hidden></Form.Item>
       <Row gutter={10}>
         {fields.map((field, idx) => {
           return (
             <Col key={idx} xs={24} sm={24} md={24} lg={12}>
               <Form.Item
                 label={field.placeholder}
-                //   rules={[{ required: true, message: `${field.placeholder} is required!` }]}
+                rules={
+                  field.name === 'confirmPassword'
+                    ? [
+                        { required: true, message: 'Please confirm your password!' },
+                        ({ getFieldValue }) => {
+                          return {
+                            validator: (_, value) => {
+                              if (!value || getFieldValue('password') === value) {
+                                return Promise.resolve();
+                              }
+                              return Promise.reject(new Error('Passwords do not match!'));
+                            }
+                          };
+                        }
+                      ]
+                    : [{ required: true, message: `${field.placeholder} is required!` }]
+                }
                 {...field}>
-                <ScalableInput {...field} className="w-full" />
+                {field.type === 'select' ? (
+                  <ScalableSelect
+                    {...field}
+                    value={form.getFieldValue(field.name)}
+                    options={field.options}
+                    placeholder={field.placeholder}
+                  />
+                ) : (
+                  <ScalableInput {...field} placeholder={field.placeholder} className="w-full" />
+                )}
               </Form.Item>
             </Col>
           );
