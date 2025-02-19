@@ -2,9 +2,9 @@ import React from 'react';
 import { Form, Tabs } from 'antd';
 import { ScalableModal } from 'components';
 import { initFormFields, resetFormFields } from 'utils';
-import { IUserModalProps } from './types';
-import UserInfo from './components/UserInfo';
-import ChangePassword from './components/ChangePassword';
+import { IUserModalProps } from '../types';
+import UserInfo from './UserInfo';
+import ChangePassword from './ChangePassword';
 /**
  * UserModal component
  * @param {IUserModalProps} props - props
@@ -16,7 +16,7 @@ const UserModal: React.FC<IUserModalProps> = (props: IUserModalProps) => {
 
   React.useEffect(() => {
     if (dataSet) {
-      if (dataSet._id) {
+      if (dataSet?._id) {
         initFormFields(dataSet as unknown as Record<string, unknown>, form);
       }
     }
@@ -43,20 +43,18 @@ const UserModal: React.FC<IUserModalProps> = (props: IUserModalProps) => {
       <Tabs>
         <Tabs.TabPane tab="User Info" key="1">
           <UserInfo
+            form={form}
             dataSet={dataSet}
-            setDataSet={setDataSet}
             editMode={props.editMode}
-            modalVisibility={props.modalVisibility}
-            setModalVisibility={props.setModalVisibility}
+            handleClose={handleClose}
           />
         </Tabs.TabPane>
         <Tabs.TabPane tab="Change Password" key="2">
           <ChangePassword
+            form={form}
             dataSet={dataSet}
-            setDataSet={setDataSet}
             editMode={props.editMode}
-            modalVisibility={props.modalVisibility}
-            setModalVisibility={props.setModalVisibility}
+            handleClose={handleClose}
           />
         </Tabs.TabPane>
       </Tabs>

@@ -11,8 +11,15 @@ import { loadUser } from 'appRedux/actions/authAction';
 // Other
 import { Alert } from 'components';
 import RequireAuth from 'utils/RequireAuth';
-import { OnBoard, Messaging, Meeting, AuthLayout, UserManagement, AdminLayout } from './views';
-import Calling from 'views/meeting/components/calling/Calling';
+import {
+  OnBoard,
+  Messaging,
+  Calling,
+  Meeting,
+  AuthLayout,
+  UserManagement,
+  AdminLayout
+} from './views';
 
 // middleware
 /**

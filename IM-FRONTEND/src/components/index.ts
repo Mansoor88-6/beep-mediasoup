@@ -1,4 +1,5 @@
 import Alert from './alert';
+import ScalableCard from './card';
 import Loader from './Loader';
 import ScalableInput from './input';
 import ScalableModal from './modal';
@@ -8,6 +9,9 @@ import * as Skeletons from './skeleton';
 import ScalableSegment from './segmented';
 import ScalableDrag from './draggable';
 import CustomTable from './table';
+import TableToolBar from './tableToolBar';
+
+import * as TableColumns from './tableColums';
 
 export {
   Alert,
@@ -19,5 +23,8 @@ export {
   ScalableSelect,
   ScalableButton,
   ScalableSegment,
-  CustomTable
+  ScalableCard,
+  CustomTable,
+  TableToolBar,
+  TableColumns
 };

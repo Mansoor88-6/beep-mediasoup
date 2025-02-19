@@ -1,7 +1,7 @@
 /* eslint-disable no-magic-numbers */
 import React from 'react';
 import { Menu, Avatar, Divider } from 'antd';
-import { UserAddOutlined, UsergroupAddOutlined, UserOutlined } from '@ant-design/icons';
+import { UsergroupAddOutlined, UserOutlined } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
 import { RootState } from 'appRedux/store';
 import OnlineStatusAvatar from 'components/common/OnlineStatusAvatar';
@@ -24,12 +24,12 @@ const NewChatDropdown: React.FC<NewChatDropdownProps> = ({
   });
 
   const items = [
-    {
-      name: 'add-user',
-      icon: <UserAddOutlined />,
-      placeholder: 'New chat',
-      onCreate: () => {}
-    },
+    // {
+    //   name: 'add-user',
+    //   icon: <UserAddOutlined />,
+    //   placeholder: 'New chat',
+    //   onCreate: () => {}
+    // },
     {
       name: 'create-group',
       icon: <UsergroupAddOutlined />,

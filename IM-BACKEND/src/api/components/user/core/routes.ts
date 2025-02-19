@@ -106,19 +106,12 @@ export default class UserRoutes {
       isAuthenticated(),
       isAuthorized([UserRole.Admin, UserRole.Client]),
       [
-        check("firstName", "First Name field is required")
+        check("username", "Username field is required")
           .not()
           .isEmpty()
           .matches(regex.CHECK_ONLY_ALPHABETS)
-          .withMessage("First Name must be alphabets only"),
-        check("lastName", "Last Name field is required")
-          .not()
-          .isEmpty()
-          .matches(regex.CHECK_ONLY_ALPHABETS)
-          .withMessage("Last Name must be alphabets only"),
+          .withMessage("Username must be alphabets only"),
         check("email", "Email is required").isEmail(),
-        check("address", "Address is required").not().isEmpty(),
-        check("organization", "Organization is required").not().isEmpty(),
         check("activate", "Activate is required")
           .isBoolean({ strict: true })
           .not()
@@ -133,7 +126,7 @@ export default class UserRoutes {
       isAuthenticated(),
       isAuthorized([UserRole.Client, UserRole.Admin]),
       [
-        check("firstName", "First Name field is required")
+        check("username", "First Name field is required")
           .not()
           .isEmpty()
           .matches(regex.CHECK_ONLY_ALPHABETS)

@@ -26,7 +26,7 @@ export interface IUserUpdateData {
   address?: string;
   email?: string;
   username?: string;
-  id?: string;
+  _id?: string;
   organization?: string;
   role?: string;
 }

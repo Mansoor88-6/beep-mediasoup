@@ -5,6 +5,9 @@ import OnBoard from './onBoard/OnBoard';
 import Messaging from './messaging';
 import Meeting from './meeting';
 import UserManagement from './users/admin';
+// Calling
+import Calling from './meeting/components/calling/Calling';
+
 // Layouts
 import AuthLayout from './layout/AuthLayout';
 import AdminLayout from './layout/AdminLayout';
@@ -22,5 +25,6 @@ export {
   OnBoard,
   Messaging,
   Meeting,
-  UserManagement
+  UserManagement,
+  Calling
 };
