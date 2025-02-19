@@ -1,0 +1,3 @@
+IM (Instant Messaging): Instant messaging refers to real-time text communication between users over the internet. It allows individuals or groups to send and receive messages instantly, often supplemented with features like file sharing, emojis, and multimedia support.
+
+VC (Video Recording): Video recording involves capturing moving images and sound, typically through a camera or smartphone. It is used for various purposes, including creating content, documenting events, or for personal memories, and can be stored in digital formats for easy sharing and editing.

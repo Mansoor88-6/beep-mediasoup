@@ -1,0 +1,218 @@
+.call-modal {
+  .ant-modal-content {
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+.call-container {
+  color: white;
+}
+
+.video-section {
+  margin-bottom: 24px;
+}
+
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.local-video-container,
+.remote-video-container {
+  position: relative;
+  aspect-ratio: 16/9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.local-video,
+.remote-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.video-label {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.video-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.audio-only-section {
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.participants-avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+
+.participant-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.participant-avatar .anticon {
+  font-size: 48px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.participant-avatar span {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.call-controls-section {
+  padding: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.incoming-call-controls {
+  text-align: center;
+}
+
+.call-info h3 {
+  color: white;
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.caller-info {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  margin-bottom: 24px;
+}
+
+.participants-list {
+  margin: 24px 0;
+}
+
+.participants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.participant-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.participant-item .anticon {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.control-button,
+.accept-button,
+.decline-button,
+.end-call-button {
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.control-button.disabled {
+  background: rgba(255, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.accept-button,
+.decline-button {
+  width: auto;
+  height: auto;
+  border-radius: 24px;
+  padding: 12px 24px;
+  gap: 8px;
+}
+
+.accept-button {
+  background: #4caf50;
+}
+
+.accept-button:hover {
+  background: #43a047;
+}
+
+.decline-button,
+.end-call-button {
+  background: #f44336;
+}
+
+.decline-button:hover,
+.end-call-button:hover {
+  background: #e53935;
+}
+
+.ongoing-call-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.main-controls {
+  display: flex;
+  gap: 16px;
+}
+
+.participants-counter {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
