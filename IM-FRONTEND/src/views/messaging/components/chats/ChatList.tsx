@@ -30,9 +30,9 @@ const ChatList: React.FC<IChatListProps> = ({ onChatSelect }) => {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto">
-        {loading && filteredChats.length === 0 ? (
-          <Skeletons.ChatItemSkeleton />
-        ) : filteredChats.length > 0 ? (
+        {loading && <Skeletons.ChatItemSkeleton />}
+        {!loading &&
+          filteredChats.length > 0 &&
           filteredChats.map((chat) => {
             return (
               <ChatListItem
@@ -42,8 +42,8 @@ const ChatList: React.FC<IChatListProps> = ({ onChatSelect }) => {
                 isActive={chat._id === activeChat}
               />
             );
-          })
-        ) : (
+          })}
+        {!loading && filteredChats.length === 0 && (
           <div className="flex justify-center items-center h-full text-gray-500">
             {Object.keys(chats).length === 0 ? 'No chats available' : 'No matching chats found'}
           </div>

@@ -135,31 +135,27 @@ export const loadUser = createAsyncThunk('auth/loadUser', async (_, { dispatch }
 
 /**
  * Logs out user and clears session
- * @returns {boolean} true if the session is cleared, false otherwise
+ * @returns {void}
  */
 export const logout = createAsyncThunk('auth/logout', async (_, { dispatch }) => {
-  let returnValue = false;
-  try {
-    await userLogout();
-    returnValue = true;
-  } catch (err) {
-    return returnValue;
-  } finally {
-    /*
-          If api return error, still
-          dispatch action so that user 
-          states are clear and secindary 
-          token is removed
-          */
-    dispatch({
-      type: DISCONNECT_SOCKET
-    });
-    dispatch({ type: RESET });
-    dispatch(authReset());
-    dispatch(clearSession());
-    // eslint-disable-next-line no-unsafe-finally
-    return returnValue;
-  }
+  document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+
+  document.location.assign('https://beepauth.averox.com/login');
+
+  window.onbeforeunload = () => null;
+
+  // setTimeout(async () => {
+  //   try {
+  //     // dispatch({ type: DISCONNECT_SOCKET });
+  //     // // dispatch({ type: RESET });
+  //     // dispatch(authReset());
+  //     // dispatch(clearSession());
+  //     await userLogout();
+  //   } catch (err) {
+  //     // Cleanup failed but user is already being redirected
+  //   }
+  // }, 0);
 });
 
 /**

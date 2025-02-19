@@ -254,7 +254,7 @@ export class CallLogService {
         .then((logs) => {
           return logs.map((log) => {
             const chatInfo = log.chatId as any;
-            console.log("chatInfo retrieved from db", chatInfo);
+
             return {
               ...log,
               chatInfo: {

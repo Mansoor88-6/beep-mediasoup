@@ -68,111 +68,6 @@ class CallService {
   public static initialize(socket: Socket) {
     this.socket = socket;
     this.device = new Device();
-
-    // Listen for new producers
-    socket.on('new_producer', async ({ producerId, producerPeerId, kind }) => {
-      try {
-        if (!this.receiveTransport) return;
-
-        console.log('new producer received', producerId, producerPeerId, kind);
-
-        // Get RTP capabilities
-        const rtpCapabilities = this.device?.rtpCapabilities;
-        if (!rtpCapabilities) {
-          throw new Error('Device not loaded with RTP capabilities');
-        }
-
-        // Create a consumer for the new producer
-        const response = await this.emitAsync<{
-          error?: string;
-          data?: {
-            id: string;
-            producerId: string;
-            kind: 'audio' | 'video';
-            rtpParameters: RtpParameters;
-          };
-        }>('consume', {
-          roomId: store.getState().call.roomId,
-          userId: store.getState().auth.user?._id,
-          producerId: producerId,
-          rtpCapabilities: rtpCapabilities
-        });
-
-        if (response.error || !response.data) {
-          throw new Error(response.error || 'No data received from consume request');
-        }
-
-        console.log('consume response', response.data);
-
-        const consumer = await this.receiveTransport.consume({
-          id: response.data.id,
-          producerId: response.data.producerId,
-          kind: response.data.kind,
-          rtpParameters: response.data.rtpParameters
-        });
-
-        console.log('consumer created', consumer);
-        // Store the consumer
-        store.dispatch(addConsumer({ id: consumer.id, consumer: consumer }));
-
-        console.log('consumer added to store', consumer);
-        // Create a new MediaStream with the consumer's track
-        const stream = new MediaStream([consumer.track]);
-
-        console.log('remote stream created', stream);
-        store.dispatch(addRemoteStream({ userId: producerPeerId, stream: stream }));
-
-        console.log('remote stream added to store', stream);
-        // Resume the consumer
-        await this.emitAsync('resume_consumer', {
-          roomId: store.getState().call.roomId,
-          userId: store.getState().auth.user?._id,
-          consumerId: consumer.id
-        });
-
-        console.log('consumer resumed');
-      } catch (error) {
-        console.error('Error handling new producer:', error);
-      }
-    });
-
-    // Listen for producer closed
-    socket.on('producer_closed', ({ consumerId }) => {
-      const consumer = store.getState().call.consumers[consumerId];
-      if (consumer) {
-        consumer.close();
-        store.dispatch(removeConsumer(consumerId));
-      }
-    });
-
-    // Listen for peer left
-    socket.on('peer_left', ({ peerId, roomId }) => {
-      console.log('Peer left:', { peerId: peerId, roomId: roomId });
-
-      // Get the remote stream for this peer
-      const remoteStream = store.getState().call.remoteStreams[peerId];
-      if (remoteStream) {
-        // Stop all tracks
-        remoteStream.getTracks().forEach((track: MediaStreamTrack) => {
-          track.stop();
-        });
-
-        // Remove the remote stream from Redux
-        store.dispatch(addRemoteStream({ userId: peerId, stream: null }));
-      }
-
-      // Close and remove any consumers associated with this peer
-      Object.entries(store.getState().call.consumers).forEach(
-        ([consumerId, consumer]: [string, any]) => {
-          if (consumer.producerPeerId === peerId) {
-            consumer.close();
-            store.dispatch(removeConsumer(consumerId));
-          }
-        }
-      );
-
-      console.log('Cleaned up resources for peer:', peerId);
-    });
   }
 
   /**
@@ -196,6 +91,12 @@ class CallService {
   ) {
     try {
       if (!this.socket) throw new Error('Socket not initialized');
+
+      // Clean up any previous call state first
+      await this.cleanupPreviousCall();
+
+      // Set up event listeners for the new call
+      this.setupCommonEventListeners(roomId);
 
       // 1. Create room
       const createRoomResponse = await new Promise<{
@@ -503,76 +404,62 @@ class CallService {
     try {
       console.log('ending call triggered for room:', roomId);
 
-      // Stop all local media tracks first
-      if (this.localStream) {
-        this.localStream.getTracks().forEach((track) => {
-          track.stop();
-        });
-        this.localStream = null;
-        store.dispatch(setLocalStream(null));
-      }
-
-      // Close all producers
-      this.producers.forEach((producer) => {
-        producer.close();
-      });
-      this.producers.clear();
-
-      // Close all consumers
-      this.consumers.forEach((consumer) => {
-        consumer.close();
-      });
-      this.consumers.clear();
-
-      // Close transports
-      if (this.sendTransport) {
-        this.sendTransport.close();
-        this.sendTransport = null;
-      }
-      if (this.receiveTransport) {
-        this.receiveTransport.close();
-        this.receiveTransport = null;
-      }
-
-      // Reset device handler and create new one
-      this.device = new Device();
-
-      // Reset connection state
-      this.isConnected = false;
-
-      // Get callLogId from Redux state before resetting
+      // Get callLogId and isIncoming from Redux state before any cleanup
       const callLogId = store.getState().call.callLogId;
-      console.log('callLogId', callLogId);
       const isIncoming = store.getState().call.isIncoming;
+      console.log('callLogId', callLogId);
 
-      store.dispatch(resetCallState());
-      if (isRejected && isIncoming && callLogId) {
-        // If the call is being rejected by the callee
-        await this.emitAsync('reject_call', {
-          callLogId: callLogId,
-          userId: store.getState().auth.user?._id
-        });
-      } else if (!isIncoming && this.socket && this.socket.connected) {
-        // If the caller is ending the call, send leave_room with quality metrics
-        console.log('Emitting leave_room for roomId:', roomId);
-        const quality = {
-          avgBitrate: this.calculateAverageBitrate(),
-          packetLoss: this.calculatePacketLoss(),
-          latency: this.calculateLatency()
-        };
+      // Send leave room event first before cleanup if needed
+      if (!isRejected && !isIncoming && this.socket && this.socket.connected) {
+        try {
+          console.log('Emitting leave_room for roomId:', roomId);
+          const quality = {
+            avgBitrate: this.calculateAverageBitrate(),
+            packetLoss: this.calculatePacketLoss(),
+            latency: this.calculateLatency()
+          };
 
-        await this.emitAsync('leave_room', {
-          roomId: roomId,
-          userId: store.getState().auth.user?._id,
-          callLogId: callLogId,
-          quality: quality
-        });
+          // Use a shorter timeout for leave_room
+          await this.emitAsync(
+            'leave_room',
+            {
+              roomId: roomId,
+              userId: store.getState().auth.user?._id,
+              callLogId: callLogId,
+              quality: quality
+            },
+            2000
+          ); // 2 second timeout
+        } catch (error) {
+          console.warn('Non-critical error sending leave_room:', error);
+          // Continue with cleanup even if leave_room fails
+        }
       }
 
-      this.roomId = null;
+      // Then do the cleanup
+      await this.cleanupPreviousCall();
+
+      // Finally handle rejection if needed
+      if (isRejected && isIncoming && callLogId) {
+        try {
+          await this.emitAsync(
+            'reject_call',
+            {
+              callLogId: callLogId,
+              userId: store.getState().auth.user?._id
+            },
+            2000
+          ); // 2 second timeout
+        } catch (error) {
+          console.warn('Non-critical error sending reject_call:', error);
+        }
+      }
+
+      // Reset Redux state after everything
+      store.dispatch(resetCallState());
     } catch (error) {
       console.error('Error cleaning up call:', error);
-
+      // Ensure Redux state is reset even if cleanup fails
       store.dispatch(resetCallState());
     }
   }
@@ -796,9 +683,17 @@ class CallService {
     try {
       if (!this.socket) throw new Error('Socket not initialized');
 
+      // Clean up any previous call state first
+      await this.cleanupPreviousCall();
+
+      // Create new device
+      this.device = new Device();
+
+      // Set up event listeners
+      this.setupCommonEventListeners(roomId);
+
       // Get callLogId from Redux state
       const callLogId = store.getState().call.callLogId;
-
       console.log('callLogId in acceptCall', callLogId);
 
       // 1. Join room
@@ -834,15 +729,19 @@ class CallService {
 
       console.log('response came from join room for acceptCall', response);
 
+      if (!this.device) {
+        throw new Error('Device not initialized');
+      }
+
       // Load the device with router RTP capabilities
-      await this.device?.load({ routerRtpCapabilities: response.data.routerRtpCapabilities });
+      await this.device.load({ routerRtpCapabilities: response.data.routerRtpCapabilities });
 
       console.log('device loaded for acceptCall');
 
       // Create send transport using options from join_room
       const { send, receive } = response.data.transportOptions;
-      this.sendTransport = this.device?.createSendTransport(send);
-      this.receiveTransport = this.device?.createRecvTransport(receive);
+      this.sendTransport = this.device.createSendTransport(send);
+      this.receiveTransport = this.device.createRecvTransport(receive);
 
       console.log('transports created for acceptCall');
 
@@ -869,8 +768,40 @@ class CallService {
         throw new Error('Failed to get active media stream');
       }
 
+      this.localStream = stream;
       console.log('local stream got for acceptCall', stream);
       store.dispatch(setLocalStream(stream));
+
+      // Notify that we're now in an ongoing call
+      store.dispatch(setOngoingCall(true));
+
+      // Publish local tracks first
+      if (stream.getAudioTracks().length > 0) {
+        const audioTrack = stream.getAudioTracks()[0];
+        const audioProducer = await this.sendTransport?.produce({
+          track: audioTrack,
+          codecOptions: {
+            opusStereo: true,
+            opusDtx: true
+          }
+        });
+        if (audioProducer) {
+          store.dispatch(addProducer({ kind: 'audio', producer: audioProducer }));
+        }
+      }
+
+      if (stream.getVideoTracks().length > 0) {
+        const videoTrack = stream.getVideoTracks()[0];
+        const videoProducer = await this.sendTransport?.produce({
+          track: videoTrack,
+          codecOptions: {
+            videoGoogleStartBitrate: 1000
+          }
+        });
+        if (videoProducer) {
+          store.dispatch(addProducer({ kind: 'video', producer: videoProducer }));
+        }
+      }
 
       // Get existing producers in the room
       const producersResponse = await this.emitAsync<{
@@ -908,31 +839,9 @@ class CallService {
         if (producerPeerId === store.getState().auth.user?._id) return;
         await this.handleProducerConsumption(producerId, producerPeerId, kind, roomId);
       });
-
-      // Publish local tracks
-      if (stream.getAudioTracks().length > 0) {
-        const audioTrack = stream.getAudioTracks()[0];
-        const audioProducer = await this.sendTransport?.produce({
-          track: audioTrack,
-          codecOptions: {
-            opusStereo: true,
-            opusDtx: true
-          }
-        });
-        store.dispatch(addProducer({ kind: 'audio', producer: audioProducer! }));
-      }
-
-      if (stream.getVideoTracks().length > 0) {
-        const videoTrack = stream.getVideoTracks()[0];
-        const videoProducer = await this.sendTransport?.produce({
-          track: videoTrack,
-          codecOptions: {
-            videoGoogleStartBitrate: 1000
-          }
-        });
-        store.dispatch(addProducer({ kind: 'video', producer: videoProducer! }));
-      }
     } catch (error) {
+      // If anything fails, ensure we clean up
+      await this.cleanupPreviousCall();
       console.error('Error in acceptCall:', error);
       throw error;
     }
@@ -1009,6 +918,199 @@ class CallService {
         }
       }
     );
+  }
+
+  private static setupCommonEventListeners(roomId: string) {
+    if (!this.socket) return;
+
+    // First remove any existing listeners to prevent duplicates
+    this.socket.off('new_producer');
+    this.socket.off('producer_closed');
+    this.socket.off('peer_left');
+    this.socket.off('call_accepted');
+
+    // Listen for new producers
+    this.socket.on('new_producer', async ({ producerId, producerPeerId, kind }) => {
+      try {
+        console.log('new producer received', producerId, producerPeerId, kind);
+        if (!this.receiveTransport) {
+          console.log('No receive transport available');
+          return;
+        }
+
+        if (producerPeerId === store.getState().auth.user?._id) {
+          console.log('Ignoring own producer');
+          return;
+        }
+
+        await this.handleProducerConsumption(producerId, producerPeerId, kind, roomId);
+      } catch (error) {
+        console.error('Error handling new producer:', error);
+      }
+    });
+
+    // Listen for producer closed
+    this.socket.on('producer_closed', ({ consumerId }) => {
+      console.log('Producer closed:', consumerId);
+      const consumer = store.getState().call.consumers[consumerId];
+      if (consumer) {
+        consumer.close();
+        store.dispatch(removeConsumer(consumerId));
+      }
+    });
+
+    // Listen for peer left
+    this.socket.on('peer_left', ({ peerId, roomId }) => {
+      console.log('Peer left:', { peerId: peerId, roomId: roomId });
+
+      // Get the remote stream for this peer
+      const remoteStream = store.getState().call.remoteStreams[peerId];
+      if (remoteStream) {
+        // Stop all tracks
+        remoteStream.getTracks().forEach((track: MediaStreamTrack) => {
+          track.stop();
+        });
+
+        // Remove the remote stream from Redux
+        store.dispatch(addRemoteStream({ userId: peerId, stream: null }));
+      }
+
+      // Close and remove any consumers associated with this peer
+      Object.entries(store.getState().call.consumers).forEach(
+        ([consumerId, consumer]: [string, any]) => {
+          if (consumer.producerPeerId === peerId) {
+            consumer.close();
+            store.dispatch(removeConsumer(consumerId));
+          }
+        }
+      );
+
+      console.log('Cleaned up resources for peer:', peerId);
+    });
+
+    // Listen for call acceptance
+    this.socket.on('call_accepted', async ({ roomId, userId, userName }) => {
+      console.log('Call accepted by:', userName);
+      store.dispatch(setOngoingCall(true));
+
+      // Get producers from the peer who just joined
+      try {
+        const producersResponse = await this.emitAsync<{
+          error?: string;
+          data?: Array<{
+            producerId: string;
+            producerPeerId: string;
+            kind: string;
+          }>;
+        }>('get_producer', {
+          roomId: roomId,
+          userId: store.getState().auth.user?._id
+        });
+
+        if (producersResponse.error) {
+          throw new Error(producersResponse.error);
+        }
+
+        console.log('Got producers from accepted call:', producersResponse.data);
+
+        // Consume the new peer's producers
+        if (producersResponse.data) {
+          for (const producer of producersResponse.data) {
+            if (producer.producerPeerId === userId) {
+              await this.handleProducerConsumption(
+                producer.producerId,
+                producer.producerPeerId,
+                producer.kind,
+                roomId
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error handling call acceptance:', error);
+      }
+    });
+  }
+
+  private static async cleanupPreviousCall() {
+    try {
+      // Remove socket listeners first to prevent any race conditions
+      if (this.socket) {
+        this.socket.off('new_producer');
+        this.socket.off('producer_closed');
+        this.socket.off('peer_left');
+        this.socket.off('call_accepted');
+      }
+
+      // Stop all local media tracks
+      if (this.localStream) {
+        const tracks = this.localStream.getTracks();
+        for (const track of tracks) {
+          try {
+            track.stop();
+          } catch (error) {
+            console.warn('Error stopping track:', error);
+          }
+        }
+        this.localStream = null;
+      }
+      store.dispatch(setLocalStream(null));
+
+      // Close all producers with error handling
+      for (const producer of this.producers.values()) {
+        try {
+          producer.close();
+        } catch (error) {
+          console.warn('Error closing producer:', error);
+        }
+      }
+      this.producers.clear();
+
+      // Close all consumers with error handling
+      for (const consumer of this.consumers.values()) {
+        try {
+          consumer.close();
+        } catch (error) {
+          console.warn('Error closing consumer:', error);
+        }
+      }
+      this.consumers.clear();
+
+      // Close transports with error handling
+      if (this.sendTransport) {
+        try {
+          this.sendTransport.close();
+        } catch (error) {
+          console.warn('Error closing send transport:', error);
+        }
+        this.sendTransport = null;
+      }
+
+      if (this.receiveTransport) {
+        try {
+          this.receiveTransport.close();
+        } catch (error) {
+          console.warn('Error closing receive transport:', error);
+        }
+        this.receiveTransport = null;
+      }
+
+      // Reset device handler
+      if (this.device?.loaded) {
+        try {
+          this.device = null;
+        } catch (error) {
+          console.warn('Error resetting device:', error);
+        }
+      }
+
+      // Reset connection state
+      this.isConnected = false;
+      this.roomId = null;
+    } catch (error) {
+      console.error('Error in cleanupPreviousCall:', error);
+      // Continue with state reset even if cleanup fails
+    }
   }
 }
 

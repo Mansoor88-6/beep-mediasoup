@@ -194,7 +194,6 @@ export default class UserController {
       //       );
       //   }
 
-      console.log(req.user);
       const user = await this.userAccountService.registerAccount(
         username,
         email,

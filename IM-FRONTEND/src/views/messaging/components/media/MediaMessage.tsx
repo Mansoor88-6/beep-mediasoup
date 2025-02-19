@@ -97,21 +97,22 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [audioDuration, setAudioDuration] = useState<number>(duration || 0);
+  const progressUpdateRef = useRef<number | null>(null);
 
   // Debug logging for props
-  useEffect(() => {
-    if (type === 'video') {
-      console.log('Video message props:', {
-        url: url,
-        fileName: fileName,
-        thumbnail: thumbnail,
-        thumbnailUrl: thumbnail ? getFullUrl(thumbnail) : null,
-        isInView: isInView,
-        isThumbnailLoaded: isThumbnailLoaded,
-        thumbnailError: thumbnailError
-      });
-    }
-  }, [type, url, thumbnail, isInView, isThumbnailLoaded, thumbnailError]);
+  // useEffect(() => {
+  //   if (type === 'video') {
+  //     console.log('Video message props:', {
+  //       url: url,
+  //       fileName: fileName,
+  //       thumbnail: thumbnail,
+  //       thumbnailUrl: thumbnail ? getFullUrl(thumbnail) : null,
+  //       isInView: isInView,
+  //       isThumbnailLoaded: isThumbnailLoaded,
+  //       thumbnailError: thumbnailError
+  //     });
+  //   }
+  // }, [type, url, thumbnail, isInView, isThumbnailLoaded, thumbnailError]);
 
   // Preload thumbnail when URL is available
   useEffect(() => {
@@ -133,6 +134,7 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
       };
       img.src = thumbnailUrl;
 
+      // Return cleanup function
       return () => {
         img.onload = null;
         img.onerror = null;
@@ -159,42 +161,31 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
       setAudioError(null);
       setCurrentTime(0);
       setIsPlaying(false);
-      setAudioDuration(duration || 0); // Reset to prop duration
+      setAudioDuration(duration || 0);
+
+      // Cancel any existing animation frame
+      if (progressUpdateRef.current) {
+        cancelAnimationFrame(progressUpdateRef.current);
+        progressUpdateRef.current = null;
+      }
     }
   }, [url, type, duration]);
 
-  // Audio loading and duration handling
+  // Audio loading and event handling
   useEffect(() => {
     if (type === 'voice' && isInView) {
-      const audio = audioRef.current;
-      if (!audio) return;
+      const audio = new Audio();
+      audioRef.current = audio;
 
-      setIsAudioLoading(true);
-      setAudioError(null);
-
-      // Configure audio settings for better performance
+      // Configure audio settings
       audio.preload = 'metadata';
       audio.crossOrigin = 'anonymous';
 
       const fullUrl = getFullUrl(url);
 
-      // First check if the audio file is accessible
-      fetch(fullUrl, { method: 'HEAD' })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          // If HEAD request succeeds, set up the audio
-          audio.src = fullUrl;
-        })
-        .catch((error) => {
-          console.error('Error checking audio availability:', error);
-          setAudioError('Audio file not accessible');
-          setIsAudioLoading(false);
-        });
-
       /**
-       * Handles the audio being able to play
+       * Handles the can play event for the audio
+       * @returns {void}
        */
       const handleCanPlay = () => {
         console.log('Audio can play');
@@ -203,40 +194,50 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
       };
 
       /**
-       * Handles the audio being ready to play
+       * Handles the loaded metadata event for the audio
+       * @returns {void}
        */
       const handleLoadedMetadata = () => {
-        console.log('Audio metadata loaded');
-        setCurrentTime(0);
+        console.log('Audio metadata loaded, duration:', audio.duration);
         if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
           setAudioDuration(audio.duration);
-        } else if (duration) {
-          setAudioDuration(duration);
         }
       };
 
       /**
-       * Handles the audio duration change
+       * Handles the time update event for the audio
+       * @returns {void}
        */
-      const handleDurationChange = () => {
-        if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
-          setAudioDuration(audio.duration);
-        } else if (duration) {
-          setAudioDuration(duration);
-        }
+      const handleTimeUpdate = () => {
+        setCurrentTime(audio.currentTime);
       };
 
       /**
-       * Handles the audio loading error
-       * @param e
+       * Handles the ended event for the audio
+       * @returns {void}
+       */
+      const handleEnded = () => {
+        console.log('Audio ended');
+        setIsPlaying(false);
+        setCurrentTime(0);
+        audio.currentTime = 0;
+      };
+
+      /**
+       * Handles the error event for the audio
+       * @param {Event} e - The event object
+       * @returns {void}
        */
       const handleError = (e: Event) => {
         const error = (e.target as HTMLAudioElement).error;
+        console.error('Audio error:', error);
         setAudioError(error?.message || 'Error loading audio');
         setIsAudioLoading(false);
+        setIsPlaying(false);
 
-        // If there's a decode error, try fallback to direct blob URL
+        // Try loading as blob if there's a decode error
         if (error?.code === MediaError.MEDIA_ERR_DECODE) {
+          console.log('Attempting to load audio as blob');
           fetch(fullUrl)
             .then((response) => {
               return response.blob();
@@ -245,7 +246,7 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
               const blobUrl = URL.createObjectURL(blob);
               audio.src = blobUrl;
               return () => {
-                return URL.revokeObjectURL(blobUrl);
+                URL.revokeObjectURL(blobUrl);
               };
             })
             .catch((err) => {
@@ -257,92 +258,28 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
 
       audio.addEventListener('canplay', handleCanPlay);
       audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.addEventListener('durationchange', handleDurationChange);
+      audio.addEventListener('timeupdate', handleTimeUpdate);
+      audio.addEventListener('ended', handleEnded);
       audio.addEventListener('error', handleError);
 
-      // eslint-disable-next-line consistent-return
+      setIsAudioLoading(true);
+      audio.src = fullUrl;
+      audio.load();
+
       return () => {
         audio.removeEventListener('canplay', handleCanPlay);
         audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-        audio.removeEventListener('durationchange', handleDurationChange);
+        audio.removeEventListener('timeupdate', handleTimeUpdate);
+        audio.removeEventListener('ended', handleEnded);
         audio.removeEventListener('error', handleError);
-        if (!isPlaying) {
-          audio.src = '';
-        }
+
+        audio.pause();
+        audio.src = '';
+        audioRef.current = null;
       };
     }
-  }, [type, url, isInView, duration]);
-
-  // Optimize audio playback handling
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || type !== 'voice') return;
-
-    let rafId = 0;
-    let lastPlaybackTime = 0;
-
-    /**
-     * Updates the playback time using requestAnimationFrame for smooth updates
-     */
-    const updatePlaybackTime = () => {
-      if (!audio || !isPlaying) return;
-
-      const newTime = audio.currentTime;
-      // Update more frequently for smoother progress
-      if (Math.abs(newTime - lastPlaybackTime) >= 0.05) {
-        setCurrentTime(newTime);
-        lastPlaybackTime = newTime;
-      }
-
-      rafId = requestAnimationFrame(updatePlaybackTime);
-    };
-
-    /**
-     * Handles the play event
-     */
-    const handlePlay = () => {
-      setIsPlaying(true);
-      rafId = requestAnimationFrame(updatePlaybackTime);
-    };
-
-    /**
-     * Handles the pause event
-     */
-    const handlePause = () => {
-      setIsPlaying(false);
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-    };
-
-    /**
-     * Handles the ended event
-     */
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-    };
-
-    audio.addEventListener('play', handlePlay);
-    audio.addEventListener('pause', handlePause);
-    audio.addEventListener('ended', handleEnded);
-
-    /**
-     * Cleans up the audio event listeners
-     */
-    // eslint-disable-next-line consistent-return
-    return () => {
-      audio.removeEventListener('play', handlePlay);
-      audio.removeEventListener('pause', handlePause);
-      audio.removeEventListener('ended', handleEnded);
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-    };
-  }, [type, isPlaying]);
+    return undefined;
+  }, [type, url, isInView]);
 
   // Move video download check to top level
   useEffect(() => {
@@ -394,7 +331,8 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
   }, []);
 
   /**
-   * Handles the loading state of media content
+   * Handles the media load event
+   * @returns {void}
    */
   const handleMediaLoad = () => {
     setIsMediaLoaded(true);
@@ -403,11 +341,15 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
   /**
    * Gets the full URL of a file
    * @param {string} path - The path of the file
-   * @returns {string} - The full URL of the file
+   * @returns {string} The full URL of the file
    */
   const getFullUrl = (path: string) => {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
+    if (!path) {
+      return '';
+    }
+    if (path.startsWith('http')) {
+      return path;
+    }
     return `${backendUrl}${path}`;
   };
 
@@ -568,21 +510,30 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
   };
 
   /**
-   * Handles the play/pause of an audio file
+   * Handles the play/pause functionality for audio playback
+   * @returns {Promise<void>} A promise that resolves when the audio state is updated
    */
   const handlePlayPause = async () => {
     const audio = audioRef.current;
-    if (!audio || !isAudioLoaded) return;
+    if (!audio || !isAudioLoaded) {
+      return;
+    }
 
     try {
       if (isPlaying) {
         audio.pause();
+        setIsPlaying(false);
       } else {
-        // Ensure audio is at the correct position if it ended
+        // Reset to beginning if ended
         if (audio.currentTime >= audio.duration) {
           audio.currentTime = 0;
         }
-        await audio.play();
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+          setIsPlaying(true);
+        }
       }
     } catch (error) {
       console.error('Error playing/pausing audio:', error);
@@ -592,8 +543,28 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
   };
 
   /**
+   * Handles seeking to a specific position in the audio track
+   * @param {React.MouseEvent<HTMLDivElement>} e - The mouse event from clicking the progress bar
+   */
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const audio = audioRef.current;
+    if (!audio || !isAudioLoaded || !audioDuration) {
+      return;
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    const newTime = percentage * audioDuration;
+
+    audio.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  /**
    * Handles adding a reaction to a message
    * @param {string} emoji - The emoji to add as a reaction
+   * @returns {Promise<void>} A promise that resolves when the reaction is added
    */
   const handleReact = async (emoji: string) => {
     if (!user || !_id) {
@@ -617,6 +588,7 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
   /**
    * Handles removing a reaction from a message
    * @param {string} emoji - The emoji to remove from reactions
+   * @returns {Promise<void>} A promise that resolves when the reaction is removed
    */
   const handleRemoveReaction = async (emoji: string) => {
     if (!user || !_id) {
@@ -869,9 +841,7 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
               renderSkeleton()
             ) : (
               <>
-                <audio ref={audioRef} preload="auto" />
-
-                {/* Play button */}
+                {/* Play/Stop button */}
                 <Button
                   type="text"
                   shape="circle"
@@ -890,43 +860,41 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
                     <div className="text-red-500 text-xs">{audioError}</div>
                   ) : (
                     <>
-                      {/* Waveform visualization */}
-                      <div className="h-8 flex items-center">
-                        <div className="w-full flex items-center justify-between gap-[1px]">
-                          {[...Array(40)].map((_, i) => {
-                            const baseHeight = 4 + (Math.sin(i * 0.5) + 1) * 8;
-                            const height = isPlaying ? baseHeight + Math.random() * 4 : baseHeight;
-                            const progress = audioDuration
-                              ? (currentTime / audioDuration) * 100
-                              : 0;
-                            const isActive = (i / 40) * 100 <= progress;
-
-                            return (
-                              <div
-                                key={i}
-                                className={`w-[2px] rounded-full transition-all duration-200 ${
-                                  isActive
-                                    ? 'bg-green-500'
-                                    : isAudioLoading
-                                    ? 'bg-gray-200'
-                                    : 'bg-gray-300'
-                                }`}
-                                style={{
-                                  height: `${height}px`,
-                                  opacity: isActive ? 1 : isAudioLoading ? 0.3 : 0.5
-                                }}
-                              />
-                            );
-                          })}
+                      {/* Interactive progress bar */}
+                      <div
+                        className="h-8 flex items-center cursor-pointer relative group"
+                        onClick={handleSeek}>
+                        {/* Background track */}
+                        <div className="absolute top-1/2 left-0 w-full h-1.5 -translate-y-1/2 bg-gray-200 rounded-full overflow-hidden">
+                          {/* Progress fill */}
+                          <div
+                            className="absolute top-0 left-0 h-full bg-green-500 rounded-full transition-transform"
+                            style={{
+                              transform: `translateX(${
+                                (currentTime / (audioDuration || 1)) * 100 - 100
+                              }%)`
+                            }}
+                          />
                         </div>
+
+                        {/* Progress handle */}
+                        <div
+                          className="absolute top-1/2 h-3 w-3 bg-green-600 rounded-full -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:scale-110"
+                          style={{
+                            left: `${(currentTime / (audioDuration || 1)) * 100}%`,
+                            transform: 'translate(-50%, -50%)'
+                          }}
+                        />
                       </div>
 
                       {/* Time display */}
                       <div className="flex items-center justify-between text-xs text-gray-500 px-1">
-                        <div className="flex items-center gap-1">
-                          <span>{formatAudioTime(currentTime)}</span>
-                          <span>/</span>
-                          <span>{audioDuration ? formatAudioTime(audioDuration) : '--:--'}</span>
+                        <div className="flex items-center gap-1 tabular-nums">
+                          <span className="font-medium">{formatAudioTime(currentTime)}</span>
+                          <span className="text-gray-400">/</span>
+                          <span className="text-gray-400">
+                            {audioDuration ? formatAudioTime(audioDuration) : '--:--'}
+                          </span>
                         </div>
                         <div className="border-l border-gray-200 pl-2 ml-4">
                           <span className="text-[10px] text-gray-400">
@@ -1001,10 +969,10 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
                 } -bottom-2 bg-white rounded-full shadow-sm border border-gray-100 px-1.5 py-0.5 
                   flex items-center gap-0.5 text-xs z-10 hover:shadow-md transition-shadow duration-200 cursor-pointer`}
                 onClick={() => {
-                  return setIsReactionsModalVisible(true);
+                  setIsReactionsModalVisible(true);
                 }}>
                 {Object.entries(groupedReactions).map(([emoji, reactors]) => {
-                  const hasReacted = reactors.some((r) => {
+                  const hasUserReacted = reactors.some((r) => {
                     return r.userId === user?._id;
                   });
                   return (
@@ -1012,14 +980,14 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
                       key={emoji}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (hasReacted) {
+                        if (hasUserReacted) {
                           handleRemoveReaction(emoji);
                         } else {
                           handleReact(emoji);
                         }
                       }}
                       className={`px-0.5 rounded transition-all duration-200 hover:scale-125 ${
-                        hasReacted ? 'text-green-600' : ''
+                        hasUserReacted ? 'text-green-600' : ''
                       }`}>
                       {emoji}
                     </span>
@@ -1055,7 +1023,7 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
         }
         open={isReactionsModalVisible}
         onCancel={() => {
-          return setIsReactionsModalVisible(false);
+          setIsReactionsModalVisible(false);
         }}
         footer={null}
         width={400}

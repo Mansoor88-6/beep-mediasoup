@@ -181,13 +181,13 @@ function initializeSocket(userId: string, dispatch: AppDispatch) {
         });
       }
 
-      dispatch(
-        updateAlert({
-          place: 'tc',
-          message: 'New message received',
-          type: 'info'
-        })
-      );
+      // dispatch(
+      //   updateAlert({
+      //     place: 'tc',
+      //     message: 'New message received',
+      //     type: 'info'
+      //   })
+      // );
     }
   );
 

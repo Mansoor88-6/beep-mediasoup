@@ -5,6 +5,7 @@ class AudioService {
   private static incomingCallSound: HTMLAudioElement;
   private static outgoingCallSound: HTMLAudioElement;
   private static callEndSound: HTMLAudioElement;
+  private static currentlyPlaying: HTMLAudioElement | null = null;
 
   /**
    * Initialize the audio service and load all sounds
@@ -39,58 +40,80 @@ class AudioService {
   }
 
   /**
-   * Preload a sound file
-   * @param audio
+   * Preload a sound
+   * @param sound - The sound to preload
    */
-  private static preloadSound(audio: HTMLAudioElement): Promise<void> {
-    return new Promise((resolve, reject) => {
-      audio.oncanplaythrough = () => {
-        return resolve();
-      };
-      audio.onerror = reject;
-    });
+  private static async preloadSound(sound: HTMLAudioElement): Promise<void> {
+    try {
+      await sound.load();
+    } catch (error) {
+      console.warn('Failed to preload sound:', error);
+    }
   }
 
   /**
-   * Play incoming call sound
-   */
-  public static playIncomingCall() {
-    this.stopAll(); // Stop any playing sounds first
-    this.incomingCallSound?.play().catch((error) => {
-      console.error('Failed to play incoming call sound:', error);
-    });
-  }
-
-  /**
-   * Play outgoing call sound
-   */
-  public static playOutgoingCall() {
-    this.stopAll(); // Stop any playing sounds first
-    this.outgoingCallSound?.play().catch((error) => {
-      console.error('Failed to play outgoing call sound:', error);
-    });
-  }
-
-  /**
-   * Play call end sound
-   */
-  public static playCallEnd() {
-    this.stopAll(); // Stop any playing sounds first
-    this.callEndSound?.play().catch((error) => {
-      console.error('Failed to play call end sound:', error);
-    });
-  }
-
-  /**
-   * Stop all sounds
+   * Stop all currently playing sounds
    */
   public static stopAll() {
-    [this.incomingCallSound, this.outgoingCallSound, this.callEndSound].forEach((sound) => {
-      if (sound) {
-        sound.pause();
-        sound.currentTime = 0;
+    try {
+      if (this.currentlyPlaying) {
+        this.currentlyPlaying.pause();
+        this.currentlyPlaying.currentTime = 0;
+        this.currentlyPlaying = null;
       }
-    });
+
+      [this.incomingCallSound, this.outgoingCallSound, this.callEndSound].forEach((sound) => {
+        if (sound) {
+          sound.pause();
+          sound.currentTime = 0;
+        }
+      });
+    } catch (error) {
+      console.warn('Error stopping sounds:', error);
+    }
+  }
+
+  /**
+   * Play the incoming call sound
+   */
+  public static async playIncomingCall() {
+    try {
+      await this.stopAll();
+      this.currentlyPlaying = this.incomingCallSound;
+      await this.incomingCallSound.play();
+    } catch (error) {
+      console.warn('Failed to play incoming call sound:', error);
+    }
+  }
+
+  /**
+   * Play the outgoing call sound
+   */
+  public static async playOutgoingCall() {
+    try {
+      await this.stopAll();
+      this.currentlyPlaying = this.outgoingCallSound;
+      await this.outgoingCallSound.play();
+    } catch (error) {
+      console.warn('Failed to play outgoing call sound:', error);
+    }
+  }
+
+  /**
+   * Play the call end sound
+   */
+  public static async playCallEnd() {
+    try {
+      await this.stopAll();
+      this.currentlyPlaying = this.callEndSound;
+      await this.callEndSound.play();
+      // Reset after playing
+      this.callEndSound.onended = () => {
+        this.currentlyPlaying = null;
+      };
+    } catch (error) {
+      console.warn('Failed to play call end sound:', error);
+    }
   }
 }
 

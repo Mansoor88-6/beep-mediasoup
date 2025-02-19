@@ -40,11 +40,10 @@ export default class AuthController {
       const zero = 0;
       const { email, password } = req.body;
       const lowerCaseEmail = UtilityService.convertToLowercase(email);
-      console.log("lowerCaseEmail", lowerCaseEmail);
       const user = await this.userService.model
         .findOne({ email: lowerCaseEmail })
         .populate("created_by");
-      console.log("fins ", user);
+
       if (!user) {
         return prepareFailedResponse(
           res,
@@ -52,7 +51,7 @@ export default class AuthController {
           statusCodes.NOT_FOUND
         );
       }
-      console.log("user", user);
+
       const customLoggerObj: IAuditLoggerObj = {
         action: "create",
         initiator: {
@@ -242,8 +241,6 @@ export default class AuthController {
        */
       const { role, id } = req.user;
 
-      console.log("req.user", req.user);
-
       /**
        * if user is client (and may or may not be mssp) and is logged in different account context then take tenant_id,
        * if user is client and is logged in as mssp then take it own id (user.id)
@@ -255,7 +252,6 @@ export default class AuthController {
         .findById(role === UserRole.Client ? id : id)
         .select("-password -password_reset_token");
 
-      console.log("user", user);
       if (!user) {
         return prepareFailedResponse(
           res,

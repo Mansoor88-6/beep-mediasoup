@@ -52,7 +52,6 @@ export default class SocketIO {
       clearInterval(this.onlineUsersInterval);
     }
 
-    // Set up new interval to broadcast online users every minute
     this.onlineUsersInterval = setInterval(() => {
       this.broadcastOnlineUsers();
     }, 60000); // 60000 ms = 1 minute
@@ -189,8 +188,6 @@ export default class SocketIO {
                 mediaData.duration = media.duration;
               }
 
-              console.log("mediaData bfr saving", mediaData);
-
               const requiredFields = [
                 "url",
                 "type",
@@ -254,15 +251,12 @@ export default class SocketIO {
             // Create a decrypted version for sending in responses
             const decryptedMessageData = { ...messageData };
             if (decryptedMessageData.text) {
-              console.log("Decrypting message", decryptedMessageData.text);
               decryptedMessageData.text =
                 MessageEncryptionService.decryptMessage(
                   decryptedMessageData.text,
                   chat.encryptionKey
                 );
             }
-
-            console.log("Decrypted message", decryptedMessageData);
             let messageSentToAnyParticipant = false;
             const deliveryPromises = chat.participants
               .filter((p) => p._id.toString() !== messageWithoutTempId.senderId)
@@ -483,7 +477,21 @@ export default class SocketIO {
               data.userName
             );
 
-            console.log("Peer created", peer);
+
+            // Notify other peers in the room about the new peer joining
+            room.peers.forEach((_, otherPeerId) => {
+              if (otherPeerId !== data.userId) {
+                const otherSocketId = SocketIO.onlineUsers.get(otherPeerId);
+                if (otherSocketId) {
+                  socket.to(otherSocketId).emit("call_accepted", {
+                    roomId: data.roomId,
+                    userId: data.userId,
+                    userName: data.userName,
+                  });
+                }
+              }
+            });
+
             // Create send transport
             const sendTransport = await this.roomManager.createWebRtcTransport(
               data.roomId,
@@ -503,6 +511,7 @@ export default class SocketIO {
               sendTransport,
               receiveTransport,
             });
+
             const transportData = {
               send: {
                 id: sendTransport.id,
@@ -790,7 +799,8 @@ export default class SocketIO {
                 if (otherPeerId !== data.userId) {
                   const otherSocketId = SocketIO.onlineUsers.get(otherPeerId);
                   if (otherSocketId) {
-                    socket.to(otherSocketId).emit(events.PEER_LEFT, {
+                    console.log("Emitting PEER_LEFT event to", otherSocketId);
+                    SocketIO.io.to(otherSocketId).emit(events.PEER_LEFT, {
                       peerId: data.userId,
                       roomId: data.roomId,
                     });
