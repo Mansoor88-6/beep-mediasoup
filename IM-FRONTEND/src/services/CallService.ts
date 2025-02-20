@@ -920,6 +920,10 @@ class CallService {
     );
   }
 
+  /**
+   * Set up common event listeners
+   * @param roomId - The ID of the room
+   */
   private static setupCommonEventListeners(roomId: string) {
     if (!this.socket) return;
 
@@ -1032,6 +1036,9 @@ class CallService {
     });
   }
 
+  /**
+   * Cleanup previous call
+   */
   private static async cleanupPreviousCall() {
     try {
       // Remove socket listeners first to prevent any race conditions

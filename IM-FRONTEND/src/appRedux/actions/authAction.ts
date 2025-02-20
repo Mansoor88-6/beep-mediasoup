@@ -1,9 +1,7 @@
 import { BackendInstance, config } from 'config';
 import { handlerError } from '../../utils/ErrorHandler';
 import { updateAlert } from './alertAction';
-import { userLogout } from 'utils/Logout';
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { DISCONNECT_SOCKET } from 'appRedux/middleware/socket/events';
 
 // types
 import type {
@@ -15,7 +13,6 @@ import type {
   IConfirmPasswordData,
   IRegisterFormData
 } from 'types/ReduxTypes/auth';
-import { RESET } from 'appRedux/middleware/root/events';
 
 // reducers
 import {
@@ -143,7 +140,9 @@ export const logout = createAsyncThunk('auth/logout', async (_, { dispatch }) =>
 
   document.location.assign('https://beepauth.averox.com/login');
 
-  window.onbeforeunload = () => null;
+  window.onbeforeunload = () => {
+    return null;
+  };
 
   // setTimeout(async () => {
   //   try {
