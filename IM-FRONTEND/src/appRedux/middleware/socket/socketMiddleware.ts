@@ -9,16 +9,8 @@ import CallService from 'services/CallService';
 import NotificationService from 'services/NotificationService';
 import { handleMessageReaction } from '../../actions/messageAction';
 import { setOnlineUsers } from '../../reducers/onlineUsersReducer';
-
-// export const events = {
-//   CONNECT: 'connect',
-//   DISCONNECT: 'disconnect',
-//   ADD_USER: 'add-user',
-//   SEND_MESSAGE: 'send_message',
-//   RECEIVE_MESSAGE: 'receive_message',
-//   MESSAGE_STATUS_UPDATE: 'message_status_update',
-//   ACKNOWLEDGE_MESSAGES: 'acknowledge_messages'
-// } as const;
+import { updateChat } from 'appRedux/reducers/messageReducer';
+import { IChat } from 'types/ReduxTypes/message/reducer';
 
 // Action Types
 export const CONNECT_SOCKET = 'CONNECT_SOCKET';
@@ -243,6 +235,11 @@ function initializeSocket(userId: string, dispatch: AppDispatch) {
   socket.on(events.ONLINE_USERS_UPDATE, (data: { onlineUsers: string[] }) => {
     console.log('Socket: Online users update received:', data);
     dispatch(setOnlineUsers(data.onlineUsers));
+  });
+
+  // Group Events
+  socket.on(events.CREATE_GROUP, (data: { chat: IChat }) => {
+    dispatch(updateChat(data.chat));
   });
 
   socket.connect();

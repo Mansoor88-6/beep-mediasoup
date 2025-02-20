@@ -10,6 +10,8 @@ import { IAuditLoggerObj } from "@customTypes/index";
 import Chat from "@models/components/chat/chat";
 import User from "@models/components/user/user";
 import { MessageEncryptionService } from "@services/helper/messageEncryption";
+import SocketIO from "@socket/socketServer";
+import { events } from "@socket/events";
 
 export default class ChatController {
   /**
@@ -180,6 +182,23 @@ export default class ChatController {
         encryptionKey,
       });
 
+      const chatObject = chat.toObject() as Record<string, any>;
+      delete chatObject.encryptionKey;
+      const onlineUsers = SocketIO.onlineUsers;
+
+      participants.forEach((participant) => {
+        const participantId = participant._id.toString();
+        if (participantId !== req.user.id) {
+          // Get socket ID directly since participantId is the key in the Map
+          const socketId = onlineUsers.get(participantId);
+          if (socketId) {
+            SocketIO.io.to(socketId).emit(events.CREATE_GROUP, {
+              chat: chatObject,
+            });
+          }
+        }
+      });
+
       const customLoggerObj: IAuditLoggerObj = {
         action: "create",
         initiator: {
@@ -193,12 +212,6 @@ export default class ChatController {
             email: p.email,
           })),
       };
-
-      logger.info("Group chat created successfully", customLoggerObj);
-
-      // Return chat without encryption key
-      const chatObject = chat.toObject() as Record<string, any>;
-      delete chatObject.encryptionKey;
 
       return prepareSuccessResponse(
         res,

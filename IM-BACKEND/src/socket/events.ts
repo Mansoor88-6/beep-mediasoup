@@ -10,6 +10,16 @@ export const events = {
   MESSAGE_STATUS_UPDATE: "message_status_update",
   ACKNOWLEDGE_MESSAGES: "acknowledge_messages",
 
+  // Group Events
+  CREATE_GROUP: "create_group",
+  ADD_GROUP_PARTICIPANTS: "add_group_participants",
+  REMOVE_GROUP_PARTICIPANTS: "remove_group_participants",
+  UPDATE_GROUP_INFO: "update_group_info",
+  DELETE_GROUP: "delete_group",
+  LEAVE_GROUP: "leave_group",
+  GET_GROUP_INFO: "get_group_info",
+  GET_GROUP_MESSAGES: "get_group_messages",
+
   // MediaSoup Events
   JOIN_ROOM: "join_room",
   LEAVE_ROOM: "leave_room",

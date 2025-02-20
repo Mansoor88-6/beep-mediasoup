@@ -21,16 +21,31 @@ const messageSlice = createSlice({
     },
     updateChat: (state, action: PayloadAction<IChat>) => {
       const chat = action.payload;
-      state.chats[chat._id] = {
-        ...state.chats[chat._id],
-        ...chat,
-        type: chat.type || 'individual',
-        participants: chat.participants.map((p) => {
-          return {
-            ...p,
-            role: p.role || 'member'
-          };
+      const updatedChats = {
+        [chat._id]: {
+          ...state.chats[chat._id],
+          ...chat,
+          type: chat.type || 'individual',
+          participants: chat.participants.map((p) => {
+            return {
+              ...p,
+              role: p.role || 'member'
+            };
+          }),
+          updatedAt: chat.updatedAt || new Date().toISOString()
+        },
+        ...state.chats
+      };
+
+      const sortedChats = Object.fromEntries(
+        Object.entries(updatedChats).sort(([, a], [, b]) => {
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
         })
+      );
+
+      return {
+        ...state,
+        chats: sortedChats
       };
     },
     setLoading: (state, action: PayloadAction<boolean>) => {

@@ -477,7 +477,6 @@ export default class SocketIO {
               data.userName
             );
 
-
             // Notify other peers in the room about the new peer joining
             room.peers.forEach((_, otherPeerId) => {
               if (otherPeerId !== data.userId) {

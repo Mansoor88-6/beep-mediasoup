@@ -601,6 +601,7 @@ const Messaging = () => {
               <Button
                 className="bg-slate-400 bg-opacity-35 mt-2 hover:bg-black hover:opacity-25"
                 type="link"
+                href="https://beepauth.averox.com"
                 icon={<VideoCameraFilled className="h-5 w-5 text-white ml-1" />}
               />
             </Tooltip>
