@@ -1,4 +1,3 @@
-/* eslint-disable jsdoc/check-types */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { MessageState } from 'types/ReduxTypes/message';
 import { IChat, IMessage } from 'views/messaging/components/types';

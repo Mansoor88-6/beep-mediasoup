@@ -1,4 +1,3 @@
-/* eslint-disable jsdoc/check-types */
 import { createSlice, PayloadAction, current } from '@reduxjs/toolkit';
 import { IAlert } from 'types/ReduxTypes/alert';
 

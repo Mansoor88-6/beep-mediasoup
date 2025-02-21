@@ -30,7 +30,9 @@ const typingSlice = createSlice({
       }
 
       // Remove existing entry for this user if exists
-      state[chatId] = state[chatId].filter((user) => user.userId !== userId);
+      state[chatId] = state[chatId].filter((user) => {
+        return user.userId !== userId;
+      });
 
       // Add new typing status
       state[chatId].push({
@@ -48,7 +50,9 @@ const typingSlice = createSlice({
     ) => {
       const { chatId, userId } = action.payload;
       if (state[chatId]) {
-        state[chatId] = state[chatId].filter((user) => user.userId !== userId);
+        state[chatId] = state[chatId].filter((user) => {
+          return user.userId !== userId;
+        });
         // Clean up empty arrays
         if (state[chatId].length === 0) {
           delete state[chatId];
@@ -61,7 +65,9 @@ const typingSlice = createSlice({
       const TIMEOUT = 5000; // 5 seconds
 
       Object.keys(state).forEach((chatId) => {
-        state[chatId] = state[chatId].filter((user) => now - user.timestamp < TIMEOUT);
+        state[chatId] = state[chatId].filter((user) => {
+          return now - user.timestamp < TIMEOUT;
+        });
         if (state[chatId].length === 0) {
           delete state[chatId];
         }

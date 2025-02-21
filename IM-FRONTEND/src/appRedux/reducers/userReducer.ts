@@ -1,4 +1,3 @@
-/* eslint-disable jsdoc/check-types */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { IUser, UserState } from 'types/ReduxTypes/user';
 
