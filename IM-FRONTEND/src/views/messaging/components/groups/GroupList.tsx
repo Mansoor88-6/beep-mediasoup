@@ -28,7 +28,7 @@ const GroupList: React.FC<IGroupListProps> = ({ onGroupSelect }) => {
   }, [chats, filterChats]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-[calc(100vh-170px)]">
       {/* <div className="py-2 border-b">
         <Button
           type="primary"

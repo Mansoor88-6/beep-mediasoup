@@ -12,12 +12,43 @@ import { setOnlineUsers } from '../../reducers/onlineUsersReducer';
 import { resetUnreadCount } from '../../reducers/messageReducer';
 import { updateChat } from 'appRedux/reducers/messageReducer';
 import { IChat } from 'types/ReduxTypes/message/reducer';
+import { setUserTyping, removeUserTyping, cleanupTypingStatus } from '../../reducers/typingReducer';
 
 // Action Types
 export const CONNECT_SOCKET = 'CONNECT_SOCKET';
 export const DISCONNECT_SOCKET = 'DISCONNECT_SOCKET';
 
 let socket: Socket | null = null;
+
+// typing event handlers
+let typingTimeout: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Emits typing status to the socket server
+ * @param {string} chatId - The ID of the chat
+ * @param {boolean} isTyping - Whether the user is typing
+ */
+export function emitTypingStatus(chatId: string, isTyping: boolean) {
+  if (!socket?.connected) return;
+
+  const state = store.getState();
+  const currentUser = state.auth.user;
+
+  if (!currentUser) return;
+
+  socket.emit(isTyping ? events.USER_TYPING : events.USER_STOPPED_TYPING, {
+    chatId,
+    userId: currentUser._id,
+    username: currentUser.username
+  });
+
+  if (isTyping) {
+    if (typingTimeout) clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+      emitTypingStatus(chatId, false);
+    }, 3000); // Stop typing status after 3 seconds of no new typing events
+  }
+}
 
 /**
  * Helper to emit events to the socket server
@@ -168,6 +199,10 @@ function initializeSocket(userId: string, dispatch: AppDispatch) {
         // Reset unread count for this chat
         dispatch(resetUnreadCount({ chatId: data.chatId, userId: currentUser._id }));
       }
+
+      if (activeChat !== data.chatId) {
+        NotificationService.showMessageNotification(data.message.text);
+      }
     }
   );
 
@@ -225,6 +260,52 @@ function initializeSocket(userId: string, dispatch: AppDispatch) {
   socket.on(events.CREATE_GROUP, (data: { chat: IChat }) => {
     dispatch(updateChat(data.chat));
   });
+
+  // Add NEW_CHAT event handler
+  socket.on(events.NEW_CHAT, (data: { chat: IChat }) => {
+    // Update the Redux store with the new chat
+    dispatch(updateChat(data.chat));
+
+    // Show notification for new chat
+    const state = store.getState();
+    const currentUser = state.auth.user;
+    if (currentUser) {
+      const otherParticipant = data.chat.participants.find((p) => {
+        return p._id !== currentUser._id;
+      });
+      if (otherParticipant) {
+        NotificationService.showMessageNotification(`New chat from ${otherParticipant.username}`);
+      }
+    }
+  });
+
+  // Add typing event handlers
+  socket.on(
+    events.TYPING_STATUS_UPDATE,
+    (data: { chatId: string; userId: string; username: string; isTyping: boolean }) => {
+      if (data.isTyping) {
+        dispatch(
+          setUserTyping({
+            chatId: data.chatId,
+            userId: data.userId,
+            username: data.username
+          })
+        );
+      } else {
+        dispatch(
+          removeUserTyping({
+            chatId: data.chatId,
+            userId: data.userId
+          })
+        );
+      }
+    }
+  );
+
+  // Set up periodic cleanup of typing status
+  setInterval(() => {
+    dispatch(cleanupTypingStatus());
+  }, 1000);
 
   socket.connect();
 }

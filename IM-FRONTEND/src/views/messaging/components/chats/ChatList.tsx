@@ -18,22 +18,40 @@ const ChatList: React.FC<IChatListProps> = ({ onChatSelect }) => {
     return state.messages;
   });
   const { filterChats } = useSearch();
+  const currentUser = useSelector((state: RootState) => state.auth.user);
 
-  // Filter to show only individual chats and apply search filter
-  const filteredChats = useMemo(() => {
+  // Filter and sort chats
+  const sortedChats = useMemo(() => {
     const individualChats = Object.values(chats).filter((chat: IChat) => {
       return chat.type === 'individual';
     });
-    return filterChats(individualChats);
-  }, [chats, filterChats]);
+
+    // Apply search filter
+    const filtered = filterChats(individualChats);
+
+    // Sort chats based on unread messages and timestamp
+    return filtered.sort((a, b) => {
+      const aUnread = currentUser ? a.unreadCount?.[currentUser._id] || 0 : 0;
+      const bUnread = currentUser ? b.unreadCount?.[currentUser._id] || 0 : 0;
+
+      // First, sort by unread status
+      if (aUnread > 0 && bUnread === 0) return -1;
+      if (bUnread > 0 && aUnread === 0) return 1;
+
+      // Then sort by timestamp
+      const aTime = new Date(a.updatedAt || 0).getTime();
+      const bTime = new Date(b.updatedAt || 0).getTime();
+      return bTime - aTime;
+    });
+  }, [chats, filterChats, currentUser]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-[calc(100vh-170px)]">
       <div className="flex-1 overflow-y-auto chat-list-scroll">
         {loading && <Skeletons.ChatItemSkeleton />}
         {!loading &&
-          filteredChats.length > 0 &&
-          filteredChats.map((chat) => {
+          sortedChats.length > 0 &&
+          sortedChats.map((chat) => {
             return (
               <ChatListItem
                 key={chat._id}
@@ -43,7 +61,7 @@ const ChatList: React.FC<IChatListProps> = ({ onChatSelect }) => {
               />
             );
           })}
-        {!loading && filteredChats.length === 0 && (
+        {!loading && sortedChats.length === 0 && (
           <div className="flex justify-center items-center h-full text-gray-500">
             {Object.keys(chats).length === 0 ? 'No chats available' : 'No matching chats found'}
           </div>

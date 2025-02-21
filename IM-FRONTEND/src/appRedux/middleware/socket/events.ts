@@ -6,6 +6,7 @@ export const MESSAGE_SEEN = 'message_seen';
 export const MESSAGE_STATUS_UPDATE = 'message_status_update';
 export const ACKNOWLEDGE_MESSAGES = 'acknowledge_messages';
 export const ADD_USER = 'add_user';
+export const NEW_CHAT = 'new_chat';
 
 // Call events
 export const CREATE_ROOM = 'create_room';
@@ -37,3 +38,8 @@ export const ONLINE_USERS_UPDATE = 'online_users_update';
 
 // Group events
 export const CREATE_GROUP = 'create_group';
+
+// Typing events
+export const USER_TYPING = 'user_typing';
+export const USER_STOPPED_TYPING = 'user_stopped_typing';
+export const TYPING_STATUS_UPDATE = 'typing_status_update';

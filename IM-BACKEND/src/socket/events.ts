@@ -9,6 +9,12 @@ export const events = {
   RECEIVE_MESSAGE: "receive_message",
   MESSAGE_STATUS_UPDATE: "message_status_update",
   ACKNOWLEDGE_MESSAGES: "acknowledge_messages",
+  NEW_CHAT: "new_chat",
+
+  // Typing Events
+  USER_TYPING: "user_typing",
+  USER_STOPPED_TYPING: "user_stopped_typing",
+  TYPING_STATUS_UPDATE: "typing_status_update",
 
   // Group Events
   CREATE_GROUP: "create_group",

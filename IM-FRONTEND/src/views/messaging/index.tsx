@@ -66,6 +66,9 @@ import VoiceRecorder from './components/media/VoiceRecorder';
 import type { RcFile } from 'antd/es/upload';
 import { SearchProvider, useSearch } from './context/SearchContext';
 import OnlineStatusAvatar from 'components/common/OnlineStatusAvatar';
+import { useTypingStatus } from 'hooks/useTypingStatus';
+import TypingIndicator from './components/TypingIndicator';
+import './components/TypingIndicator.css';
 
 // Media upload constants
 export const MAX_IMAGE_SIZE = 16 * 1024 * 1024; // 16MB
@@ -170,14 +173,17 @@ const MessageInputForm = memo(
   ({
     onSendMessage,
     onStartVoiceRecord,
-    onMediaUpload
+    onMediaUpload,
+    chatId
   }: {
     onSendMessage: (text: string) => void;
     onStartVoiceRecord: () => void;
     onMediaUpload: (files: UploadFile[], type: 'image' | 'video' | 'document' | 'voice') => void;
+    chatId: string;
   }) => {
     const [messageText, setMessageText] = useState('');
     const [form] = Form.useForm();
+    const { handleTyping } = useTypingStatus(chatId);
 
     /**
      * Handles form submission
@@ -197,6 +203,11 @@ const MessageInputForm = memo(
         e.preventDefault();
         handleSubmit();
       }
+    };
+
+    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setMessageText(e.target.value);
+      handleTyping();
     };
 
     return (
@@ -303,11 +314,9 @@ const MessageInputForm = memo(
         <Form.Item className="w-full p-0 m-0" rules={[{ required: true }]}>
           <TextArea
             placeholder="Type message here"
-            className="rounded-full bg-white resize-none"
+            className="bg-white resize-none"
             value={messageText}
-            onChange={(e) => {
-              return setMessageText(e.target.value);
-            }}
+            onChange={handleTextChange}
             onKeyPress={handleKeyPress}
             autoSize={{ minRows: 1, maxRows: 4 }}
           />
@@ -882,24 +891,38 @@ const Messaging = () => {
             </div>
           </Content>
 
-          <div className="bg-white p-3">
-            {isVoiceRecording ? (
-              <VoiceRecorder
-                onSend={handleVoiceMessage}
-                onCancel={() => {
-                  setIsVoiceRecording(false);
-                }}
-              />
-            ) : (
-              <MessageInputForm
-                onSendMessage={handleSendMessage}
-                onStartVoiceRecord={() => {
-                  return setIsVoiceRecording(true);
-                }}
-                onMediaUpload={handleMediaUpload}
-              />
-            )}
-          </div>
+          {/* Message input area with typing indicator */}
+          {currentChat && (
+            <div className="bg-[#f0f2f5] border-t">
+              {/* Typing indicator */}
+              {activeChat && (
+                <div className="px-4 py-2">
+                  <TypingIndicator chatId={activeChat} />
+                </div>
+              )}
+
+              {/* Message input */}
+              <div className="p-4">
+                {isVoiceRecording ? (
+                  <VoiceRecorder
+                    onSend={handleVoiceMessage}
+                    onCancel={() => {
+                      return setIsVoiceRecording(false);
+                    }}
+                  />
+                ) : (
+                  <MessageInputForm
+                    onSendMessage={handleSendMessage}
+                    onStartVoiceRecord={() => {
+                      return setIsVoiceRecording(true);
+                    }}
+                    onMediaUpload={handleMediaUpload}
+                    chatId={activeChat || ''}
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </Layout>
 
         <CallModal />

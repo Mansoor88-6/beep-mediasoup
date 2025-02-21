@@ -1,10 +1,12 @@
 import store from 'appRedux/store';
+import { notification } from 'antd';
 
 /**
  * Service for handling push notifications and sounds for incoming calls
  */
 class NotificationService {
   private static notificationSound: HTMLAudioElement;
+  private static notificationPermission: NotificationPermission | null = null;
 
   /**
    * Initialize the notification service
@@ -44,6 +46,12 @@ class NotificationService {
         console.error('Service Worker registration failed:', error);
       }
     }
+
+    try {
+      this.notificationPermission = await Notification.requestPermission();
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+    }
   }
 
   /**
@@ -81,13 +89,12 @@ class NotificationService {
     // Play notification sound
     await this.playNotificationSound();
 
+    const title = isGroup ? `Incoming ${isVideo ? 'Video' : 'Audio'} Call` : fromUsername;
+    const body = isGroup
+      ? `${fromUsername} is calling ${groupName}`
+      : `Incoming ${isVideo ? 'video' : 'audio'} call`;
+
     try {
-      const title = isGroup ? `Incoming ${isVideo ? 'Video' : 'Audio'} Call` : fromUsername;
-
-      const body = isGroup
-        ? `${fromUsername} is calling ${groupName}`
-        : `Incoming ${isVideo ? 'video' : 'audio'} call`;
-
       // Try service worker notification first
       if ('serviceWorker' in navigator) {
         try {
@@ -122,6 +129,14 @@ class NotificationService {
     } catch (error) {
       console.error('Notification creation failed:', error);
     }
+
+    // in-app notification
+    notification.info({
+      message: title,
+      description: body,
+      duration: 0,
+      placement: 'topRight'
+    });
   }
 
   /**
@@ -160,6 +175,31 @@ class NotificationService {
       return setTimeout(resolve, 1);
     });
     oscillator.stop();
+  }
+
+  /**
+   * Show a notification for a new message
+   * @param {string} message - The message content or notification text
+   */
+  public static showMessageNotification(message: string): void {
+    // Try to show a system notification first
+    if (this.notificationPermission === 'granted') {
+      const notification = new Notification('New Message', {
+        body: message,
+        icon: '/favicon.ico'
+      });
+      // Store or use the notification object
+      notification.onclick = () => {
+        window.focus();
+      };
+    }
+
+    notification.info({
+      message: 'New Message',
+      description: message,
+      duration: 3,
+      placement: 'topRight'
+    });
   }
 }
 

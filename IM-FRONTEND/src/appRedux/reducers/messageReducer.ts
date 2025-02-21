@@ -33,20 +33,16 @@ const messageSlice = createSlice({
         updatedAt: chat.updatedAt || new Date().toISOString()
       };
 
-      if (chat.type === 'group') {
-        const updatedChats = {
-          [chat._id]: baseChat,
-          ...state.chats
-        };
+      // Always update the chat in state
+      state.chats[chat._id] = baseChat;
 
-        state.chats = Object.fromEntries(
-          Object.entries(updatedChats).sort(([, a], [, b]) => {
-            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-          })
-        );
-      } else {
-        state.chats[chat._id] = baseChat;
-      }
+      // Sort chats by updatedAt timestamp
+      const sortedChats = Object.entries(state.chats).sort(([, a], [, b]) => {
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
+
+      // Reconstruct the chats object in sorted order
+      state.chats = Object.fromEntries(sortedChats);
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -101,10 +97,15 @@ const messageSlice = createSlice({
     ) => {
       const { chatId, message } = action.payload;
       if (state.chats[chatId]) {
+        // Add the message
         state.chats[chatId].messages.push(message);
+
+        // Update chat's timestamp
+        state.chats[chatId].updatedAt = message.timestamp || new Date().toISOString();
+
+        // Update unread count if chat is not active
         if (state.activeChat !== chatId) {
           const chat = state.chats[chatId];
-          // fix lint Expected block statement surrounding arrow body
           const recipients = chat.participants
             .filter((p) => {
               return p._id !== message.senderId;
@@ -120,6 +121,14 @@ const messageSlice = createSlice({
             };
           });
         }
+
+        // Sort chats by updatedAt timestamp
+        const sortedChats = Object.entries(state.chats).sort(([, a], [, b]) => {
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+        });
+
+        // Reconstruct the chats object in sorted order
+        state.chats = Object.fromEntries(sortedChats);
       }
     },
     resetUnreadCount: (

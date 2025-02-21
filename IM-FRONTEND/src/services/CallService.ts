@@ -630,7 +630,6 @@ class CallService {
         userId: store.getState().auth.user?._id,
         consumerId: consumer.id
       });
-
     } catch (error) {
       console.error('Error handling producer consumption:', error);
     }
@@ -913,10 +912,8 @@ class CallService {
 
     // Listen for peer left
     this.socket.on('peer_left', ({ peerId, roomId }) => {
-
       const remoteStream = store.getState().call.remoteStreams[peerId];
       if (remoteStream) {
-
         remoteStream.getTracks().forEach((track: MediaStreamTrack) => {
           track.stop();
         });

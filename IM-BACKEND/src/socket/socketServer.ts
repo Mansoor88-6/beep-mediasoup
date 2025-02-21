@@ -91,6 +91,97 @@ export default class SocketIO {
         this.broadcastOnlineUsers();
       });
 
+      // Add typing event handlers
+      socket.on(
+        events.USER_TYPING,
+        async (data: { chatId: string; userId: string; username: string }) => {
+          try {
+            logger.info(
+              `[Socket:USER_TYPING] User ${data.username} is typing in chat ${data.chatId}`
+            );
+
+            // Find the chat to verify the user is a participant
+            const chat = await Chat.findOne({
+              _id: data.chatId,
+              "participants._id": data.userId,
+            });
+
+            if (!chat) {
+              logger.error(
+                `[Socket:USER_TYPING] Chat not found or user not authorized`
+              );
+              return;
+            }
+
+            // Notify other participants in the chat
+            chat.participants.forEach((participant) => {
+              if (participant._id.toString() !== data.userId) {
+                const recipientSocketId = SocketIO.onlineUsers.get(
+                  participant._id.toString()
+                );
+                if (recipientSocketId) {
+                  socket
+                    .to(recipientSocketId)
+                    .emit(events.TYPING_STATUS_UPDATE, {
+                      chatId: data.chatId,
+                      userId: data.userId,
+                      username: data.username,
+                      isTyping: true,
+                    });
+                }
+              }
+            });
+          } catch (error) {
+            logger.error(`[Socket:USER_TYPING] Error:`, error);
+          }
+        }
+      );
+
+      socket.on(
+        events.USER_STOPPED_TYPING,
+        async (data: { chatId: string; userId: string; username: string }) => {
+          try {
+            logger.info(
+              `[Socket:USER_STOPPED_TYPING] User ${data.username} stopped typing in chat ${data.chatId}`
+            );
+
+            // Find the chat to verify the user is a participant
+            const chat = await Chat.findOne({
+              _id: data.chatId,
+              "participants._id": data.userId,
+            });
+
+            if (!chat) {
+              logger.error(
+                `[Socket:USER_STOPPED_TYPING] Chat not found or user not authorized`
+              );
+              return;
+            }
+
+            // Notify other participants in the chat
+            chat.participants.forEach((participant) => {
+              if (participant._id.toString() !== data.userId) {
+                const recipientSocketId = SocketIO.onlineUsers.get(
+                  participant._id.toString()
+                );
+                if (recipientSocketId) {
+                  socket
+                    .to(recipientSocketId)
+                    .emit(events.TYPING_STATUS_UPDATE, {
+                      chatId: data.chatId,
+                      userId: data.userId,
+                      username: data.username,
+                      isTyping: false,
+                    });
+                }
+              }
+            });
+          } catch (error) {
+            logger.error(`[Socket:USER_STOPPED_TYPING] Error:`, error);
+          }
+        }
+      );
+
       socket.on(
         events.SEND_MESSAGE,
         async (
@@ -98,7 +189,6 @@ export default class SocketIO {
           callback: (response: { error?: string; data?: any }) => void
         ) => {
           try {
-
             const { _id, ...messageWithoutTempId } = data.message;
 
             // Get the chat to access its encryption key
@@ -273,10 +363,21 @@ export default class SocketIO {
 
                 if (receiverSocketId) {
                   try {
-                    socket.to(receiverSocketId).emit(events.RECEIVE_MESSAGE, {
-                      chatId: data.chatId,
-                      message: decryptedMessageData,
-                    });
+                    // If this is the first message in the chat, send the entire chat object first
+                    if (chat.messages.length === 1) {
+                      socket.to(receiverSocketId).emit(events.NEW_CHAT, {
+                        chat: {
+                          ...updatedChat.toObject(),
+                          messages: [decryptedMessageData], // Include only the current message
+                        },
+                      });
+                    } else {
+                      // For existing chats, just send the new message
+                      socket.to(receiverSocketId).emit(events.RECEIVE_MESSAGE, {
+                        chatId: data.chatId,
+                        message: decryptedMessageData,
+                      });
+                    }
                     messageSentToAnyParticipant = true;
                     logger.info(
                       `[Socket:SEND_MESSAGE] Message delivered to: ${participant._id}`

@@ -10,6 +10,7 @@ import roomReducer, { RoomSelector } from './roomReducer';
 import messageReducer, { MessageSelector } from './messageReducer';
 import callLogsReducer, { CallLogsSelector } from './callLogsReducer';
 import onlineUsersReducer, { OnlineUsersSelector } from './onlineUsersReducer';
+import typingReducer from './typingReducer';
 
 const appReducer = combineReducers({
   auth: authReducer,
@@ -19,7 +20,8 @@ const appReducer = combineReducers({
   call: callReducer,
   room: roomReducer,
   callLogs: callLogsReducer,
-  onlineUsers: onlineUsersReducer
+  onlineUsers: onlineUsersReducer,
+  typing: typingReducer
 });
 
 export {
