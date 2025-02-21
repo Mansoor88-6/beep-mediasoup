@@ -264,7 +264,7 @@ export const createGroup = createAsyncThunk(
       dispatch(setLoading(true));
       const response = await BackendInstance.post('chats/group', groupData, config);
       const chat = response.data.data;
-      dispatch(addChat(chat));
+      dispatch(updateChat(chat));
       dispatch(setActiveChat(chat._id));
       return chat;
     } catch (error) {

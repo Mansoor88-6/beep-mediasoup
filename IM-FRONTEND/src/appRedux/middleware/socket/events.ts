@@ -34,3 +34,6 @@ export const REACTION_REMOVED = 'reaction_removed';
 
 // Online users events
 export const ONLINE_USERS_UPDATE = 'online_users_update';
+
+// Group events
+export const CREATE_GROUP = 'create_group';

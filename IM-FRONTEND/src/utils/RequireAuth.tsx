@@ -23,7 +23,7 @@ const RequireAuth = ({ children }: IAuthParams) => {
 
   if (loading) {
     return (
-      <Content className="auth-loading">
+      <Content className="h-screen flex items-center justify-center">
         <Loader spinning={true} size={'large'} />
       </Content>
     );

@@ -10,16 +10,8 @@ import NotificationService from 'services/NotificationService';
 import { handleMessageReaction } from '../../actions/messageAction';
 import { setOnlineUsers } from '../../reducers/onlineUsersReducer';
 import { resetUnreadCount } from '../../reducers/messageReducer';
-
-// export const events = {
-//   CONNECT: 'connect',
-//   DISCONNECT: 'disconnect',
-//   ADD_USER: 'add-user',
-//   SEND_MESSAGE: 'send_message',
-//   RECEIVE_MESSAGE: 'receive_message',
-//   MESSAGE_STATUS_UPDATE: 'message_status_update',
-//   ACKNOWLEDGE_MESSAGES: 'acknowledge_messages'
-// } as const;
+import { updateChat } from 'appRedux/reducers/messageReducer';
+import { IChat } from 'types/ReduxTypes/message/reducer';
 
 // Action Types
 export const CONNECT_SOCKET = 'CONNECT_SOCKET';
@@ -227,6 +219,11 @@ function initializeSocket(userId: string, dispatch: AppDispatch) {
   // Handle online users update
   socket.on(events.ONLINE_USERS_UPDATE, (data: { onlineUsers: string[] }) => {
     dispatch(setOnlineUsers(data.onlineUsers));
+  });
+
+  // Group Events
+  socket.on(events.CREATE_GROUP, (data: { chat: IChat }) => {
+    dispatch(updateChat(data.chat));
   });
 
   socket.connect();
