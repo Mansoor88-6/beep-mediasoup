@@ -118,12 +118,10 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
   useEffect(() => {
     if (type === 'video' && thumbnail && isInView) {
       const thumbnailUrl = getFullUrl(thumbnail);
-      console.log('Preloading thumbnail:', thumbnailUrl);
 
       // Create a new image to preload
       const img: HTMLImageElement = new window.Image(300, 200);
       img.onload = () => {
-        console.log('Thumbnail preloaded successfully');
         setIsThumbnailLoaded(true);
         setThumbnailError(false);
       };
@@ -146,7 +144,6 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
   // Reset thumbnail states when url or type changes
   useEffect(() => {
     if (type === 'video') {
-      console.log('Resetting thumbnail states');
       setIsThumbnailLoaded(false);
       setThumbnailError(false);
       setIsVideoDownloaded(false);
@@ -188,7 +185,6 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
        * @returns {void}
        */
       const handleCanPlay = () => {
-        console.log('Audio can play');
         setIsAudioLoaded(true);
         setIsAudioLoading(false);
       };
@@ -198,7 +194,6 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
        * @returns {void}
        */
       const handleLoadedMetadata = () => {
-        console.log('Audio metadata loaded, duration:', audio.duration);
         if (audio.duration && !isNaN(audio.duration) && audio.duration !== Infinity) {
           setAudioDuration(audio.duration);
         }
@@ -217,7 +212,6 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
        * @returns {void}
        */
       const handleEnded = () => {
-        console.log('Audio ended');
         setIsPlaying(false);
         setCurrentTime(0);
         audio.currentTime = 0;
@@ -237,7 +231,6 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
 
         // Try loading as blob if there's a decode error
         if (error?.code === MediaError.MEDIA_ERR_DECODE) {
-          console.log('Attempting to load audio as blob');
           fetch(fullUrl)
             .then((response) => {
               return response.blob();
@@ -568,18 +561,15 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
    */
   const handleReact = async (emoji: string) => {
     if (!user || !_id) {
-      console.log('Cannot react - missing user or message id:', { user: user, _id: _id });
       return;
     }
     try {
-      console.log('Sending reaction:', { messageId: _id, emoji: emoji, userId: user._id });
       await dispatch(
         sendMessageReaction({
           messageId: _id,
           emoji: emoji
         })
       ).unwrap();
-      console.log('Reaction sent successfully');
     } catch (error) {
       console.error('Error adding reaction:', error);
     }
@@ -601,7 +591,6 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
           emoji: emoji
         })
       ).unwrap();
-      console.log('Reaction removed successfully');
     } catch (error) {
       console.error('Error removing reaction:', error);
     }
@@ -707,13 +696,6 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
 
       case 'video':
         const thumbnailUrl = thumbnail ? getFullUrl(thumbnail) : null;
-        console.log('Rendering video content:', {
-          thumbnailUrl: thumbnailUrl,
-          isThumbnailLoaded: isThumbnailLoaded,
-          thumbnailError: thumbnailError,
-          isVideoDownloaded: isVideoDownloaded,
-          isInView: isInView
-        });
 
         return (
           <>
@@ -737,7 +719,6 @@ const MediaMessage: React.FC<MediaMessageProps> = ({
                     loading="eager"
                     crossOrigin="anonymous"
                     onLoad={(e) => {
-                      console.log('Thumbnail loaded in DOM:', thumbnailUrl);
                       setIsThumbnailLoaded(true);
                       setThumbnailError(false);
                       (e.target as HTMLImageElement).style.opacity = '0.8';

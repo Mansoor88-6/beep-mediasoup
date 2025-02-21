@@ -52,8 +52,6 @@ const callSlice = createSlice({
         callLogId?: string;
       }>
     ) => {
-      console.log('1st: Setting call room:', action.payload);
-      console.log('callLogId in setCallRoom', action.payload.callLogId);
       state.roomId = action.payload.roomId;
       state.remoteUserId = action.payload.userId;
       state.remoteUsername = action.payload.username;
@@ -82,23 +80,7 @@ const callSlice = createSlice({
       }
     },
     setLocalStream: (state, action: PayloadAction<MediaStream | null>) => {
-      if (action.payload) {
-        console.log('Setting local stream:', {
-          id: action.payload.id,
-          active: action.payload.active,
-          tracks: action.payload.getTracks().map((track) => {
-            return {
-              kind: track.kind,
-              id: track.id,
-              enabled: track.enabled,
-              readyState: track.readyState
-            };
-          })
-        });
-      }
       state.localStream = action.payload;
-
-      console.log('local stream set in store after', state.localStream);
     },
     addRemoteStream: (
       state,

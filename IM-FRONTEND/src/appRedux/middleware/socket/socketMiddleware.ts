@@ -9,6 +9,7 @@ import CallService from 'services/CallService';
 import NotificationService from 'services/NotificationService';
 import { handleMessageReaction } from '../../actions/messageAction';
 import { setOnlineUsers } from '../../reducers/onlineUsersReducer';
+import { resetUnreadCount } from '../../reducers/messageReducer';
 
 // export const events = {
 //   CONNECT: 'connect',
@@ -111,15 +112,6 @@ function initializeSocket(userId: string, dispatch: AppDispatch) {
         return;
       }
 
-      console.log('Received incoming call:', {
-        roomId: roomId,
-        fromUserId: fromUserId,
-        fromUsername: fromUsername,
-        isVideo: isVideo,
-        participants: participants,
-        callLogId: callLogId
-      });
-
       NotificationService.showIncomingCallNotification(fromUsername, isVideo, isGroup, groupName);
 
       dispatch(
@@ -172,22 +164,18 @@ function initializeSocket(userId: string, dispatch: AppDispatch) {
       // Check if this chat is currently open
       const state = store.getState();
       const activeChat = state.messages.activeChat;
+      const currentUser = state.auth.user;
 
       // If chat is open, acknowledge message immediately
-      if (activeChat === data.chatId && socket) {
+      if (activeChat === data.chatId && socket && currentUser) {
         socket.emit(events.ACKNOWLEDGE_MESSAGES, {
           chatId: data.chatId,
-          receiverId: state.auth.user?._id
+          receiverId: currentUser._id
         });
-      }
 
-      // dispatch(
-      //   updateAlert({
-      //     place: 'tc',
-      //     message: 'New message received',
-      //     type: 'info'
-      //   })
-      // );
+        // Reset unread count for this chat
+        dispatch(resetUnreadCount({ chatId: data.chatId, userId: currentUser._id }));
+      }
     }
   );
 
@@ -200,7 +188,6 @@ function initializeSocket(userId: string, dispatch: AppDispatch) {
       tempId?: string;
       seenBy?: string[];
     }) => {
-      console.log('Received message status update:', data);
       dispatch({
         type: 'messages/updateMessageStatus',
         payload: {
@@ -216,7 +203,6 @@ function initializeSocket(userId: string, dispatch: AppDispatch) {
 
   // Handle reaction events
   socket.on(events.REACTION_RECEIVED, (data) => {
-    console.log('Socket: Reaction received event:', data);
     store.dispatch(
       handleMessageReaction({
         messageId: data.messageId,
@@ -228,7 +214,6 @@ function initializeSocket(userId: string, dispatch: AppDispatch) {
   });
 
   socket.on(events.REACTION_REMOVED, (data) => {
-    console.log('Socket: Reaction removed event:', data);
     store.dispatch(
       handleMessageReaction({
         messageId: data.messageId,
@@ -241,7 +226,6 @@ function initializeSocket(userId: string, dispatch: AppDispatch) {
 
   // Handle online users update
   socket.on(events.ONLINE_USERS_UPDATE, (data: { onlineUsers: string[] }) => {
-    console.log('Socket: Online users update received:', data);
     dispatch(setOnlineUsers(data.onlineUsers));
   });
 

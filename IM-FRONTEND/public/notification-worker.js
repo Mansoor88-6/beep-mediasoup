@@ -2,7 +2,6 @@
 
 // Handle notification clicks
 self.addEventListener('notificationclick', function (event) {
-  console.log('Notification clicked:', event);
 
   event.notification.close();
 

@@ -239,7 +239,6 @@ export default class UserController {
     const { role, id } = req.user;
     const { clientId } = req.params;
     const zero = 0;
-    console.log(clientId, id, req.body);
     const { username, userRole, email, activate } = req.body;
     const lowerCaseEmail = UtilityService.convertToLowercase(email);
 

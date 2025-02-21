@@ -62,15 +62,10 @@ const CallModal: React.FC = () => {
 
       try {
         if (videoElement.srcObject !== localStream) {
-          console.log('Attempting to attach stream:', {
-            attempt: attachAttemptRef.current + 1,
-            streamId: localStream.id
-          });
 
           videoElement.srcObject = localStream;
           await videoElement.play();
 
-          console.log('Stream attached and playing successfully');
           return true;
         }
         return true;
@@ -126,7 +121,6 @@ const CallModal: React.FC = () => {
         const videoTracks = stream.getVideoTracks();
         if (videoTracks.length > 0) {
           if (videoElement.srcObject !== stream) {
-            console.log('Attaching remote video stream:', userId);
             videoElement.srcObject = stream;
             videoElement.play().catch((error) => {
               console.error('Failed to play remote video stream:', error);
@@ -141,7 +135,6 @@ const CallModal: React.FC = () => {
         const audioTracks = stream.getAudioTracks();
         if (audioTracks.length > 0) {
           if (audioElement.srcObject !== stream) {
-            console.log('Attaching remote audio stream:', userId);
             audioElement.srcObject = stream;
             audioElement.play().catch((error) => {
               console.error('Failed to play remote audio stream:', error);
@@ -161,24 +154,20 @@ const CallModal: React.FC = () => {
     const hasParticipants = participantCount > 1;
     // Handle incoming call sound
     if (isIncoming && !isOngoing) {
-      console.log('Playing incoming call sound');
       AudioService.playIncomingCall();
     }
     // Handle outgoing call sound
     else if (!isIncoming && isOngoing && !hasParticipants) {
-      console.log('Playing outgoing call sound');
       AudioService.playOutgoingCall();
     }
     // Stop all sounds when call becomes ongoing or component unmounts
     else if (hasParticipants) {
-      console.log('Call is now ongoing, stopping call sounds');
       AudioService.stopAll();
     }
 
     // Cleanup function to stop all sounds when component unmounts
     // or when call state changes
     return () => {
-      console.log('Cleaning up call sounds');
       AudioService.stopAll();
     };
   }, [isIncoming, isOngoing, participants]);
@@ -188,7 +177,6 @@ const CallModal: React.FC = () => {
    */
   const handleAcceptCall = async () => {
     if (!roomId || !user) return;
-    console.log('Accepting call:', { roomId: roomId, isVideo: isVideo });
 
     try {
       // Request media permissions first
@@ -207,12 +195,6 @@ const CallModal: React.FC = () => {
           : false
       });
 
-      // If we got here, permissions were granted
-      console.log('Media permissions granted:', {
-        audioTracks: stream.getAudioTracks().length,
-        videoTracks: stream.getVideoTracks().length
-      });
-
       // Stop the incoming call sound
       AudioService.stopAll();
 
@@ -225,8 +207,6 @@ const CallModal: React.FC = () => {
       // Handle permission denied error
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
-          // You might want to show a notification to the user here
-          console.log('Media permissions were denied by the user');
           // End the call since we can't proceed without permissions
           handleEndCall();
         } else {
@@ -251,8 +231,6 @@ const CallModal: React.FC = () => {
         // If it's an incoming call that hasn't been answered yet, mark it as rejected
         await CallService.endCall(roomId, true);
       } else {
-        // Normal call end
-        console.log('normal call end triggered');
         await CallService.endCall(roomId);
       }
     }

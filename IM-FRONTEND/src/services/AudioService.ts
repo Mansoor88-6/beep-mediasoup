@@ -33,7 +33,6 @@ class AudioService {
         this.preloadSound(this.callEndSound)
       ]);
 
-      console.log('AudioService initialized successfully');
     } catch (error) {
       console.error('Failed to initialize AudioService:', error);
     }

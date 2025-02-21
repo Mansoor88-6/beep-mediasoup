@@ -10,7 +10,6 @@ class NotificationService {
    * Initialize the notification service
    */
   public static async initialize() {
-    console.log('Initializing NotificationService...');
 
     // Check if notifications are supported
     if (!('Notification' in window)) {
@@ -42,7 +41,6 @@ class NotificationService {
     if ('serviceWorker' in navigator && window.isSecureContext) {
       try {
         await navigator.serviceWorker.register('/notification-worker.js');
-        console.log('Service Worker registered');
       } catch (error) {
         console.error('Service Worker registration failed:', error);
       }

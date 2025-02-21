@@ -29,7 +29,7 @@ const ChatList: React.FC<IChatListProps> = ({ onChatSelect }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto chat-list-scroll">
         {loading && <Skeletons.ChatItemSkeleton />}
         {!loading &&
           filteredChats.length > 0 &&
@@ -49,6 +49,32 @@ const ChatList: React.FC<IChatListProps> = ({ onChatSelect }) => {
           </div>
         )}
       </div>
+      <style>
+        {`
+          .chat-list-scroll::-webkit-scrollbar {
+            width: 4px;
+          }
+          
+          .chat-list-scroll::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          
+          .chat-list-scroll::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 20px;
+          }
+          
+          .chat-list-scroll::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+          }
+          
+          .chat-list-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: #d1d5db transparent;
+            scroll-behavior: smooth;
+          }
+        `}
+      </style>
     </div>
   );
 };

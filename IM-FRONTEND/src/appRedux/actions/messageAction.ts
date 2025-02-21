@@ -59,12 +59,6 @@ export const sendMessage = createAsyncThunk<
         formData.append('duration', media.duration.toString());
       }
 
-      console.log('Uploading media with formData:', {
-        type: media.type,
-        filename: media.filename,
-        duration: media.duration
-      });
-
       // Upload the file
       try {
         const uploadResponse = await BackendInstance.post('messages/upload', formData, {
@@ -74,9 +68,6 @@ export const sendMessage = createAsyncThunk<
             'Content-Type': 'multipart/form-data'
           }
         });
-
-        console.log('uploadResponse', uploadResponse);
-        console.log('Upload response:', uploadResponse.data);
 
         // Match the backend's media format
         Object.assign(messageData, {
@@ -105,10 +96,7 @@ export const sendMessage = createAsyncThunk<
         throw error;
       }
 
-      console.log('Final messageData with media:', messageData);
     }
-
-    console.log('messageData', messageData);
 
     const currentChat = (getState() as any).messages.chats[chatId];
     dispatch(
@@ -127,7 +115,6 @@ export const sendMessage = createAsyncThunk<
         tempId: tempId
       })
         .then((response: { data: { chat: IChat; message: any } }) => {
-          console.log('socket send message response', response);
           if (response?.data?.chat) {
             // dispatch(updateChat(response.data.chat));
             resolve(response.data.chat);
@@ -151,20 +138,6 @@ export const fetchChatMessages = createAsyncThunk(
     try {
       dispatch(setLoading(true));
       const response = await BackendInstance.get(`messages/chats/${chatId}/messages`, config);
-
-      console.log('Raw chat messages response:', response.data.data);
-      console.log('Fetched chat messages:', {
-        chatId: chatId,
-        messages: response.data.data.messages?.map((msg: any) => {
-          return {
-            id: msg._id,
-            type: msg.media?.type,
-            thumbnail: msg.media?.thumbnail,
-            url: msg.media?.url,
-            duration: msg.media?.duration
-          };
-        })
-      });
 
       dispatch(updateChat(response.data.data));
       return response.data.data;
@@ -310,21 +283,12 @@ export const sendMessageReaction = createAsyncThunk(
       const currentUser = (getState() as RootState).auth.user;
       if (!currentUser) throw new Error('User not authenticated');
 
-      console.log('Emitting send_reaction event:', {
-        messageId,
-        emoji,
-        userId: currentUser._id,
-        username: currentUser.username
-      });
-
       const response = await Socket.socketEmit(events.SEND_REACTION, {
         messageId: messageId,
         emoji: emoji,
         userId: currentUser._id,
         username: currentUser.username
       });
-
-      console.log('Send reaction response:', response);
 
       if (response?.data?.message) {
         const state = getState() as RootState;
@@ -360,12 +324,6 @@ export const removeMessageReaction = createAsyncThunk(
     try {
       const currentUser = (getState() as RootState).auth.user;
       if (!currentUser) throw new Error('User not authenticated');
-
-      console.log('Emitting remove_reaction event:', {
-        messageId,
-        emoji,
-        userId: currentUser._id
-      });
 
       // First update the local state immediately
       const state = getState() as RootState;
@@ -404,7 +362,6 @@ export const removeMessageReaction = createAsyncThunk(
         userId: currentUser._id
       });
 
-      console.log('Remove reaction response:', response);
     } catch (error) {
       console.error('Failed to remove reaction:', error);
       throw error;

@@ -44,17 +44,9 @@ export default class WebRTCService {
 
     // Handle incoming tracks
     WebRTCService.peerConnection.ontrack = (event) => {
-      console.log('Received track:', event.track.kind, 'enabled:', event.track.enabled);
       const [remoteStream] = event.streams;
       WebRTCService.audioService.stop();
       if (remoteStream && WebRTCService.onRemoteStream) {
-        // console.log('Setting remote stream with tracks:', {
-        //   audio: remoteStream.getAudioTracks().length,
-        //   video: remoteStream.getVideoTracks().length,
-        //   videoEnabled: remoteStream.getVideoTracks().map((track) => {
-        //     return track.enabled;
-        //   })
-        // });
 
         // Ensure video tracks are enabled if they exist
         remoteStream.getVideoTracks().forEach((track) => {
@@ -65,14 +57,14 @@ export default class WebRTCService {
       }
     };
 
-    // Connection state monitoring
-    WebRTCService.peerConnection.onconnectionstatechange = () => {
-      console.log('Connection state changed:', WebRTCService.peerConnection?.connectionState);
-    };
+    // // Connection state monitoring
+    // WebRTCService.peerConnection.onconnectionstatechange = () => {
+    //   console.log('Connection state changed:', WebRTCService.peerConnection?.connectionState);
+    // };
 
-    WebRTCService.peerConnection.oniceconnectionstatechange = () => {
-      console.log('ICE connection state:', WebRTCService.peerConnection?.iceConnectionState);
-    };
+    // WebRTCService.peerConnection.oniceconnectionstatechange = () => {
+    //   console.log('ICE connection state:', WebRTCService.peerConnection?.iceConnectionState);
+    // };
 
     WebRTCService.peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
@@ -111,22 +103,15 @@ export default class WebRTCService {
           : false
       });
 
-      console.log('Got local stream:', {
-        audioTracks: WebRTCService.localStream.getAudioTracks().length,
-        videoTracks: WebRTCService.localStream.getVideoTracks().length
-      });
-
       // Initialize peer connection AFTER getting stream
       WebRTCService.initializePeerConnection();
 
       // Add tracks to peer connection
       WebRTCService.localStream.getTracks().forEach((track) => {
-        console.log('Adding track to peer connection:', track.kind);
         WebRTCService.peerConnection?.addTrack(track, WebRTCService.localStream!);
       });
 
       const offer = await WebRTCService.peerConnection?.createOffer();
-      console.log('Created offer:', offer);
       await WebRTCService.peerConnection?.setLocalDescription(offer);
 
       // store.dispatch(
@@ -163,7 +148,6 @@ export default class WebRTCService {
     isVideo: boolean = false
   ): Promise<RTCSessionDescriptionInit | undefined> {
     try {
-      console.log('Handling incoming call with video:', isVideo);
       WebRTCService.isVideoCall = isVideo;
 
       try {
@@ -216,7 +200,6 @@ export default class WebRTCService {
    */
   public static async handleIceCandidate(candidate: RTCIceCandidate) {
     try {
-      console.log('Handling ICE candidate:', candidate.candidate);
       if (WebRTCService.peerConnection?.remoteDescription) {
         await WebRTCService.peerConnection.addIceCandidate(candidate);
       } else {
@@ -237,7 +220,6 @@ export default class WebRTCService {
       if (candidate) {
         try {
           await WebRTCService.peerConnection?.addIceCandidate(candidate);
-          console.log('Added pending ICE candidate');
         } catch (error) {
           console.error('Error adding pending ICE candidate:', error);
         }

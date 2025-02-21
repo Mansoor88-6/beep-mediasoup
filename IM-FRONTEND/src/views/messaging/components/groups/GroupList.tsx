@@ -41,7 +41,7 @@ const GroupList: React.FC<IGroupListProps> = ({ onGroupSelect }) => {
         </Button>
       </div> */}
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto chat-list-scroll">
         {loading && filteredGroups.length === ZERO ? (
           <Skeletons.ChatItemSkeleton />
         ) : filteredGroups.length > ZERO ? (
@@ -61,6 +61,32 @@ const GroupList: React.FC<IGroupListProps> = ({ onGroupSelect }) => {
           </div>
         )}
       </div>
+      <style>
+        {`
+          .chat-list-scroll::-webkit-scrollbar {
+            width: 4px;
+          }
+          
+          .chat-list-scroll::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          
+          .chat-list-scroll::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 20px;
+          }
+          
+          .chat-list-scroll::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+          }
+          
+          .chat-list-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: #d1d5db transparent;
+            scroll-behavior: smooth;
+          }
+        `}
+      </style>
     </div>
   );
 };

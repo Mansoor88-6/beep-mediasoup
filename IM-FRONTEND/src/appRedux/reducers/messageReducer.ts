@@ -63,21 +63,19 @@ const messageSlice = createSlice({
     ) => {
       const { chatId, messageId, isSent, tempId, seenBy } = action.payload;
       const chat = state.chats[chatId];
-      console.log('retrieved chat before update', JSON.stringify(state.chats[chatId]));
       if (chat) {
-        const messageIndex = chat.messages.findIndex((msg) => {
-          return msg._id === messageId || msg._id === tempId;
+        chat.messages = chat.messages.map((msg) => {
+          if (msg._id === messageId || msg._id === tempId) {
+            return {
+              ...msg,
+              _id: messageId,
+              isSent: isSent,
+              seenBy: seenBy || msg.seenBy
+            };
+          }
+          return msg;
         });
-        if (messageIndex !== -ONE) {
-          chat.messages[messageIndex] = {
-            ...chat.messages[messageIndex],
-            _id: messageId,
-            isSent: isSent,
-            ...(seenBy && { seenBy: seenBy })
-          };
-        }
       }
-      console.log('retrieved chat after update', JSON.stringify(state.chats[chatId]));
     },
     addMessage: (
       state,
@@ -89,6 +87,34 @@ const messageSlice = createSlice({
       const { chatId, message } = action.payload;
       if (state.chats[chatId]) {
         state.chats[chatId].messages.push(message);
+        if (state.activeChat !== chatId) {
+          const chat = state.chats[chatId];
+          const recipients = chat.participants
+            .filter((p) => p._id !== message.senderId)
+            .map((p) => p._id);
+
+          recipients.forEach((recipientId) => {
+            state.chats[chatId].unreadCount = {
+              ...state.chats[chatId].unreadCount,
+              [recipientId]: (state.chats[chatId].unreadCount[recipientId] || 0) + 1
+            };
+          });
+        }
+      }
+    },
+    resetUnreadCount: (
+      state,
+      action: PayloadAction<{
+        chatId: string;
+        userId: string;
+      }>
+    ) => {
+      const { chatId, userId } = action.payload;
+      if (state.chats[chatId]) {
+        state.chats[chatId].unreadCount = {
+          ...state.chats[chatId].unreadCount,
+          [userId]: 0
+        };
       }
     }
   }
@@ -103,7 +129,8 @@ export const {
   addChat,
   setChats,
   updateMessageStatus,
-  addMessage
+  addMessage,
+  resetUnreadCount
 } = messageSlice.actions;
 
 export default messageSlice.reducer;

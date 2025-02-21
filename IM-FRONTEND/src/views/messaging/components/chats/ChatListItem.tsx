@@ -38,30 +38,15 @@ const ChatListItem: React.FC<IChatListItemProps> = React.memo(
         onClick={() => {
           return onChatSelect?.(chat._id);
         }}>
-        {unreadCount > 0 ? (
-          <Badge offset={[ZERO, THREE]} color="green" count={unreadCount}>
-            <div className="p-0.5 rounded-full border-2 border-[#25D366]">
-              <OnlineStatusAvatar
-                userId={otherParticipant?._id || ''}
-                avatarProps={{
-                  size: 'large',
-                  style: { backgroundColor: '#CEF6DB' },
-                  icon: <UserOutlined />
-                }}
-              />
-            </div>
-          </Badge>
-        ) : (
-          <OnlineStatusAvatar
-            userId={otherParticipant?._id || ''}
-            avatarProps={{
-              size: 'large',
-              className: 'border-2 border-[#25D366]',
-              style: { backgroundColor: '#CEF6DB' },
-              icon: <UserOutlined />
-            }}
-          />
-        )}
+        <OnlineStatusAvatar
+          userId={otherParticipant?._id || ''}
+          avatarProps={{
+            size: 'large',
+            className: 'border-2 border-[#25D366]',
+            style: { backgroundColor: '#CEF6DB' },
+            icon: <UserOutlined />
+          }}
+        />
         <div className="flex-1 min-w-0">
           <span className="font-medium block truncate">{otherParticipant?.username}</span>
           {lastMessage && (
@@ -70,6 +55,25 @@ const ChatListItem: React.FC<IChatListItemProps> = React.memo(
             </p>
           )}
         </div>
+        {unreadCount > 0 && (
+          <div className="flex items-start">
+            <Badge
+              className="flex items-center justify-center"
+              count={unreadCount}
+              style={{
+                backgroundColor: '#25D366',
+                border: 'none',
+                padding: '0 6px',
+                height: '19px',
+                minWidth: '19px',
+                borderRadius: '10px',
+                fontSize: '12px',
+                fontWeight: '500',
+                lineHeight: '19px'
+              }}
+            />
+          </div>
+        )}
       </div>
     );
   }

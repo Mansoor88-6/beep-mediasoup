@@ -98,12 +98,6 @@ export default class SocketIO {
           callback: (response: { error?: string; data?: any }) => void
         ) => {
           try {
-            console.log(`[Socket:SEND_MESSAGE] Event triggered`, {
-              from: socket.id,
-              chatId: data.chatId,
-              tempId: data.tempId,
-              message: data.message,
-            });
 
             const { _id, ...messageWithoutTempId } = data.message;
 
@@ -246,6 +240,18 @@ export default class SocketIO {
               : messageWithoutTempId.text || "";
             chat.updatedAt = new Date();
 
+            // Update unread count for all recipients
+            const recipients = chat.participants
+              .filter((p) => p._id.toString() !== messageWithoutTempId.senderId)
+              .map((p) => p._id.toString());
+
+            recipients.forEach((recipientId) => {
+              chat.unreadCount = {
+                ...chat.unreadCount,
+                [recipientId]: (chat.unreadCount[recipientId] || 0) + 1,
+              };
+            });
+
             const updatedChat = await chat.save();
 
             // Create a decrypted version for sending in responses
@@ -376,11 +382,8 @@ export default class SocketIO {
           callback: (response: { error?: string; data?: any }) => void
         ) => {
           try {
-            console.log("[Socket:CREATE_ROOM] triggered", data);
             const room = await this.roomManager.createRoom(data.roomId);
 
-            console.log("[Socket:CREATE_ROOM] room created", room);
-            console.log("socket.onlineUsers", SocketIO.onlineUsers);
             const fromUserId = Array.from(SocketIO.onlineUsers.entries()).find(
               ([_, socketId]) => socketId === socket.id
             )?.[0];
@@ -411,7 +414,6 @@ export default class SocketIO {
             data.toUserIds.forEach((toUserId) => {
               const recipientSocketId = SocketIO.onlineUsers.get(toUserId);
               if (recipientSocketId) {
-                console.log("Emitting incoming_call to", recipientSocketId);
                 socket.to(recipientSocketId).emit("incoming_call", {
                   roomId: data.roomId,
                   fromUserId: fromUserId,
@@ -455,9 +457,8 @@ export default class SocketIO {
           callback: (response: { error?: string; data?: any }) => void
         ) => {
           try {
-            console.log("JOIN_ROOM triggered", data);
             const room = await this.roomManager.getRoom(data.roomId);
-            console.log("Room found", room);
+
             if (!room) {
               callback({ error: "Room not found" });
               return;
@@ -476,7 +477,6 @@ export default class SocketIO {
               data.userId,
               data.userName
             );
-
 
             // Notify other peers in the room about the new peer joining
             room.peers.forEach((_, otherPeerId) => {
@@ -506,11 +506,6 @@ export default class SocketIO {
                 data.userId,
                 "receive"
               );
-
-            console.log("Transports created", {
-              sendTransport,
-              receiveTransport,
-            });
 
             const transportData = {
               send: {
@@ -556,19 +551,13 @@ export default class SocketIO {
           callback: (error: any) => void
         ) => {
           try {
-            console.log("[Socket:CONNECT_TRANSPORT] triggered", data);
             const peer = this.roomManager.getPeer(data.roomId, data.userId);
-            console.log("[Socket:CONNECT_TRANSPORT] Peer found", peer);
             if (!peer) {
               callback({ error: "[Socket:CONNECT_TRANSPORT] Peer not found" });
               return;
             }
 
             const transport = peer.transports.get(data.transportId);
-            console.log(
-              "[Socket:CONNECT_TRANSPORT] Transport found",
-              transport
-            );
             if (!transport) {
               callback({
                 error: "[Socket:CONNECT_TRANSPORT] Transport not found",
@@ -577,7 +566,6 @@ export default class SocketIO {
             }
 
             await transport.connect({ dtlsParameters: data.dtlsParameters });
-            console.log("[Socket:CONNECT_TRANSPORT] Transport connected");
             callback(null);
           } catch (error) {
             logger.error(`[Socket:CONNECT_TRANSPORT] Error:`, error);
@@ -599,16 +587,13 @@ export default class SocketIO {
           callback: (response: { error?: string; data?: any }) => void
         ) => {
           try {
-            console.log("[Socket:PRODUCE] triggered", data);
             const peer = this.roomManager.getPeer(data.roomId, data.userId);
-            console.log("[Socket:PRODUCE] Peer found", peer);
             if (!peer) {
               callback({ error: "[Socket:PRODUCE] Peer not found" });
               return;
             }
 
             const transport = peer.transports.get(data.transportId);
-            console.log("[Socket:PRODUCE] Transport found", transport);
             if (!transport) {
               callback({ error: "[Socket:PRODUCE] Transport not found" });
               return;
@@ -619,17 +604,11 @@ export default class SocketIO {
               rtpParameters: data.rtpParameters,
             });
 
-            console.log("[Socket:PRODUCE] Producer created", producer);
-
             peer.producers.set(producer.id, producer);
-
-            console.log("[Socket:PRODUCE] Producer added to peer", peer);
             producer.on("transportclose", () => {
               producer.close();
               peer.producers.delete(producer.id);
             });
-
-            console.log("[Socket:PRODUCE] Producer closed event added");
 
             // Notify other peers in the room about the new producer
             const room = this.roomManager.getRoom(data.roomId);
@@ -648,7 +627,6 @@ export default class SocketIO {
               });
             }
 
-            console.log("[Socket:PRODUCE] Producer created", producer);
             callback({ data: { id: producer.id } });
           } catch (error) {
             logger.error(`[Socket:PRODUCE] Error:`, error);
@@ -746,7 +724,6 @@ export default class SocketIO {
           callback: (error: any) => void
         ) => {
           try {
-            console.log("[Socket:RESUME_CONSUMER] triggered", data);
             const peer = this.roomManager.getPeer(data.roomId, data.userId);
             if (!peer) {
               callback({ error: "[Socket:RESUME_CONSUMER] Peer not found" });
@@ -754,14 +731,12 @@ export default class SocketIO {
             }
 
             const consumer = peer.consumers.get(data.consumerId);
-            console.log("[Socket:RESUME_CONSUMER] Consumer found", consumer);
             if (!consumer) {
               callback({ error: "Consumer not found" });
               return;
             }
 
             await consumer.resume();
-            console.log("[Socket:RESUME_CONSUMER] Consumer resumed");
             callback(null);
           } catch (error) {
             logger.error(`[Socket:RESUME_CONSUMER] Error:`, error);
@@ -783,7 +758,6 @@ export default class SocketIO {
           };
         }) => {
           try {
-            console.log("[Socket:LEAVE_ROOM] triggered", data);
             const room = this.roomManager.getRoom(data.roomId);
 
             // Update call log for leaving participant
@@ -799,7 +773,6 @@ export default class SocketIO {
                 if (otherPeerId !== data.userId) {
                   const otherSocketId = SocketIO.onlineUsers.get(otherPeerId);
                   if (otherSocketId) {
-                    console.log("Emitting PEER_LEFT event to", otherSocketId);
                     SocketIO.io.to(otherSocketId).emit(events.PEER_LEFT, {
                       peerId: data.userId,
                       roomId: data.roomId,
@@ -826,7 +799,6 @@ export default class SocketIO {
         events.ACKNOWLEDGE_MESSAGES,
         async (data: { chatId: string; receiverId: string }) => {
           try {
-            console.log("[Socket:ACKNOWLEDGE_MESSAGES] triggered", data);
             logger.info(
               `[Socket:ACKNOWLEDGE_MESSAGES] Processing acknowledgment`,
               {
@@ -852,10 +824,6 @@ export default class SocketIO {
                 msg.senderId !== data.receiverId &&
                 (!msg.seenBy || !msg.seenBy.includes(data.receiverId))
             );
-            console.log(
-              "[Socket:ACKNOWLEDGE_MESSAGES] Undelivered messages",
-              undeliveredMessages
-            );
 
             if (undeliveredMessages.length === 0) {
               logger.info(
@@ -869,6 +837,7 @@ export default class SocketIO {
               {
                 $set: {
                   "messages.$[elem].isSent": true,
+                  [`unreadCount.${data.receiverId}`]: 0,
                 },
                 $addToSet: {
                   "messages.$[elem].seenBy": data.receiverId,
@@ -1023,7 +992,6 @@ export default class SocketIO {
           callback: (response: { error?: string; data?: any }) => void
         ) => {
           try {
-            console.log("[Socket:SEND_REACTION] triggered", data);
             // Find the chat containing the message
             const chat = await Chat.findOne({
               "messages._id": data.messageId,
@@ -1139,7 +1107,6 @@ export default class SocketIO {
           callback: (response: { error?: string; data?: any }) => void
         ) => {
           try {
-            console.log("[Socket:REMOVE_REACTION] triggered", data);
             // Find the chat containing the message
             const chat = await Chat.findOne({
               "messages._id": data.messageId,

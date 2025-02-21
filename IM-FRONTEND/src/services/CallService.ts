@@ -135,7 +135,6 @@ class CallService {
         );
       });
 
-      console.log('create room response', createRoomResponse);
       if (createRoomResponse.error) {
         throw createRoomResponse.error;
       }
@@ -153,8 +152,6 @@ class CallService {
       );
 
       this.device = new Device();
-
-      console.log('create room response', createRoomResponse);
 
       // 2. Join room
       const response = await new Promise<{
@@ -196,18 +193,12 @@ class CallService {
         );
       });
 
-      console.log('response came from join room', response);
-
       // Load the device with router RTP capabilities
       await this.device?.load({ routerRtpCapabilities: response.data.routerRtpCapabilities });
-
-      console.log('device loaded');
 
       // Create send transport using options from join_room
       const { send, receive } = response.data.transportOptions;
       this.sendTransport = this.device?.createSendTransport(send);
-
-      console.log('send transport created');
 
       // Handle send transport connection
       this.sendTransport.on(
@@ -301,18 +292,14 @@ class CallService {
         throw new Error('Failed to get active media stream');
       }
 
-      console.log('local stream got', stream);
       store.dispatch(setLocalStream(stream));
 
-      console.log('local stream set in store');
       // Produce audio and video tracks
       if (stream.getAudioTracks().length > 0) {
-        console.log('audio track found');
         const audioTrack = stream.getAudioTracks()[0];
         if (audioTrack.readyState === 'ended') {
           throw new Error('Audio track is ended, cannot produce');
         }
-        console.log('audio track got', audioTrack);
         const audioProducer = await this.sendTransport.produce({
           track: audioTrack,
           codecOptions: {
@@ -320,17 +307,14 @@ class CallService {
             opusDtx: true
           }
         });
-        console.log('audio producer created', audioProducer);
         store.dispatch(addProducer({ kind: 'audio', producer: audioProducer }));
       }
 
       if (isVideo && stream.getVideoTracks().length > 0) {
-        console.log('video track found');
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack.readyState === 'ended') {
           throw new Error('Video track is ended, cannot produce');
         }
-        console.log('video track got', videoTrack);
         const videoProducer = await this.sendTransport.produce({
           track: videoTrack,
           encodings: [
@@ -342,14 +326,11 @@ class CallService {
             videoGoogleStartBitrate: 1000
           }
         });
-        console.log('video producer created', videoProducer);
         store.dispatch(addProducer({ kind: 'video', producer: videoProducer }));
       }
 
       // Create receive transport using options from join_room
       this.receiveTransport = this.device?.createRecvTransport(receive);
-
-      console.log('receive transport created');
 
       // Handle receive transport connection
       this.receiveTransport.on(
@@ -386,8 +367,6 @@ class CallService {
         }
       );
 
-      console.log('receive transport connected');
-
       store.dispatch(setOngoingCall(true));
     } catch (error) {
       console.error('Error starting call:', error);
@@ -402,17 +381,14 @@ class CallService {
    */
   public static async endCall(roomId: string, isRejected: boolean = false) {
     try {
-      console.log('ending call triggered for room:', roomId);
 
       // Get callLogId and isIncoming from Redux state before any cleanup
       const callLogId = store.getState().call.callLogId;
       const isIncoming = store.getState().call.isIncoming;
-      console.log('callLogId', callLogId);
 
       // Send leave room event first before cleanup if needed
       if (!isRejected && !isIncoming && this.socket && this.socket.connected) {
         try {
-          console.log('Emitting leave_room for roomId:', roomId);
           const quality = {
             avgBitrate: this.calculateAverageBitrate(),
             packetLoss: this.calculatePacketLoss(),
@@ -473,14 +449,11 @@ class CallService {
       const callLogId = store.getState().call.callLogId;
       const isIncoming = store.getState().call.isIncoming;
 
-      console.log('handling call timeout', callLogId, isIncoming);
-
       // First end the call to ensure UI cleanup happens immediately
       await this.endCall(roomId);
 
       // Then update the call log status without waiting
       if (isIncoming && callLogId) {
-        console.log('emitting missed_call');
         // Use regular socket emit instead of emitAsync since we don't need to wait for response
         this.socket?.emit('missed_call', {
           callLogId: callLogId,
@@ -612,8 +585,6 @@ class CallService {
     try {
       if (!this.receiveTransport) return;
 
-      console.log('handling producer consumption', producerId, producerPeerId, kind);
-
       // Get RTP capabilities
       const rtpCapabilities = this.device?.rtpCapabilities;
       if (!rtpCapabilities) {
@@ -640,27 +611,20 @@ class CallService {
         throw new Error(response.error || 'No data received from consume request');
       }
 
-      console.log('consume response', response.data);
-
       const consumer = await this.receiveTransport.consume({
         id: response.data.id,
         producerId: response.data.producerId,
         kind: response.data.kind,
         rtpParameters: response.data.rtpParameters
       });
-
-      console.log('consumer created', consumer);
       // Store the consumer
       store.dispatch(addConsumer({ id: consumer.id, consumer: consumer }));
 
-      console.log('consumer added to store', consumer);
       // Create a new MediaStream with the consumer's track
       const stream = new MediaStream([consumer.track]);
 
-      console.log('remote stream created', stream);
       store.dispatch(addRemoteStream({ userId: producerPeerId, stream: stream }));
 
-      console.log('remote stream added to store', stream);
       // Resume the consumer
       await this.emitAsync('resume_consumer', {
         roomId: roomId,
@@ -668,7 +632,6 @@ class CallService {
         consumerId: consumer.id
       });
 
-      console.log('consumer resumed');
     } catch (error) {
       console.error('Error handling producer consumption:', error);
     }
@@ -694,7 +657,6 @@ class CallService {
 
       // Get callLogId from Redux state
       const callLogId = store.getState().call.callLogId;
-      console.log('callLogId in acceptCall', callLogId);
 
       // 1. Join room
       const response = await this.emitAsync<{
@@ -727,8 +689,6 @@ class CallService {
         }
       });
 
-      console.log('response came from join room for acceptCall', response);
-
       if (!this.device) {
         throw new Error('Device not initialized');
       }
@@ -736,14 +696,10 @@ class CallService {
       // Load the device with router RTP capabilities
       await this.device.load({ routerRtpCapabilities: response.data.routerRtpCapabilities });
 
-      console.log('device loaded for acceptCall');
-
       // Create send transport using options from join_room
       const { send, receive } = response.data.transportOptions;
       this.sendTransport = this.device.createSendTransport(send);
       this.receiveTransport = this.device.createRecvTransport(receive);
-
-      console.log('transports created for acceptCall');
 
       // Set up transport event handlers
       this.setupTransportHandlers(roomId);
@@ -769,7 +725,6 @@ class CallService {
       }
 
       this.localStream = stream;
-      console.log('local stream got for acceptCall', stream);
       store.dispatch(setLocalStream(stream));
 
       // Notify that we're now in an ongoing call
@@ -819,8 +774,6 @@ class CallService {
       if (producersResponse.error) {
         throw new Error(producersResponse.error);
       }
-
-      console.log('existing producers:', producersResponse.data);
 
       // Consume existing producers
       if (producersResponse.data) {
@@ -936,14 +889,11 @@ class CallService {
     // Listen for new producers
     this.socket.on('new_producer', async ({ producerId, producerPeerId, kind }) => {
       try {
-        console.log('new producer received', producerId, producerPeerId, kind);
         if (!this.receiveTransport) {
-          console.log('No receive transport available');
           return;
         }
 
         if (producerPeerId === store.getState().auth.user?._id) {
-          console.log('Ignoring own producer');
           return;
         }
 
@@ -955,7 +905,6 @@ class CallService {
 
     // Listen for producer closed
     this.socket.on('producer_closed', ({ consumerId }) => {
-      console.log('Producer closed:', consumerId);
       const consumer = store.getState().call.consumers[consumerId];
       if (consumer) {
         consumer.close();
@@ -965,17 +914,14 @@ class CallService {
 
     // Listen for peer left
     this.socket.on('peer_left', ({ peerId, roomId }) => {
-      console.log('Peer left:', { peerId: peerId, roomId: roomId });
 
-      // Get the remote stream for this peer
       const remoteStream = store.getState().call.remoteStreams[peerId];
       if (remoteStream) {
-        // Stop all tracks
+
         remoteStream.getTracks().forEach((track: MediaStreamTrack) => {
           track.stop();
         });
 
-        // Remove the remote stream from Redux
         store.dispatch(addRemoteStream({ userId: peerId, stream: null }));
       }
 
@@ -988,13 +934,10 @@ class CallService {
           }
         }
       );
-
-      console.log('Cleaned up resources for peer:', peerId);
     });
 
     // Listen for call acceptance
     this.socket.on('call_accepted', async ({ roomId, userId, userName }) => {
-      console.log('Call accepted by:', userName);
       store.dispatch(setOngoingCall(true));
 
       // Get producers from the peer who just joined
@@ -1014,8 +957,6 @@ class CallService {
         if (producersResponse.error) {
           throw new Error(producersResponse.error);
         }
-
-        console.log('Got producers from accepted call:', producersResponse.data);
 
         // Consume the new peer's producers
         if (producersResponse.data) {

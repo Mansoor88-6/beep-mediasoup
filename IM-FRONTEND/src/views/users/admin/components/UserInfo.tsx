@@ -32,7 +32,6 @@ const UserInfo: React.FC<IUserInfoProps> = (props: IUserInfoProps) => {
       _id: values._id
     };
     if (dataSet?._id) {
-      console.log(updateData);
       if ((await dispatch(updateUser(updateData))).payload) {
         handleClose();
       }

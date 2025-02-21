@@ -66,6 +66,7 @@ import VoiceRecorder from './components/media/VoiceRecorder';
 import type { RcFile } from 'antd/es/upload';
 import { SearchProvider, useSearch } from './context/SearchContext';
 import OnlineStatusAvatar from 'components/common/OnlineStatusAvatar';
+import { resetUnreadCount } from 'appRedux/reducers/messageReducer';
 
 // Media upload constants
 export const MAX_IMAGE_SIZE = 16 * 1024 * 1024; // 16MB
@@ -83,6 +84,7 @@ export const ALLOWED_DOC_TYPES = [
 const { Header, Sider, Content } = Layout;
 const { useBreakpoint } = Grid;
 const { Text } = Typography;
+const { TextArea } = Input;
 
 /**
  * SearchInput component for filtering chats
@@ -187,6 +189,13 @@ const MessageInputForm = memo(
       setMessageText('');
     };
 
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    };
+
     return (
       <Form onFinish={handleSubmit} form={form} className="flex items-center gap-2">
         <Popover
@@ -289,13 +298,13 @@ const MessageInputForm = memo(
           />
         </Popover>
         <Form.Item className="w-full p-0 m-0" rules={[{ required: true }]}>
-          <Input
+          <TextArea
             placeholder="Type message here"
-            className="rounded-full bg-white"
+            className="rounded-full bg-white resize-none"
             value={messageText}
-            onChange={(e) => {
-              return setMessageText(e.target.value);
-            }}
+            onChange={(e) => setMessageText(e.target.value)}
+            onKeyPress={handleKeyPress}
+            autoSize={{ minRows: 1, maxRows: 4 }}
           />
         </Form.Item>
         <Button
@@ -331,13 +340,14 @@ const Messaging = () => {
   const [groupModalVisible, setGroupModalVisible] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const fetchedChatsRef = useRef<Set<string>>(new Set());
 
   const { chats } = useSelector((state: RootState) => {
     return state.messages;
   });
   const { activeChat, currentChat, messages } = useSelector(MessageSelector);
   const { user } = useSelector(AuthSelector);
-  console.log('Messages check:', messages);
+
   /**
    * Scrolls to the bottom of the messages list
    * @param {boolean} immediate - Whether to scroll immediately without smooth behavior
@@ -384,12 +394,15 @@ const Messaging = () => {
     // Only fetch messages if:
     // 1. There is an active chat
     // 2. The chat exists in our chats object
-    // 3. The chat doesn't have any messages loaded yet
+    // 3. The chat doesn't have any messages loaded yet OR messages array is empty
+    // 4. The chat hasn't been fetched before (using ref)
     if (
       activeChat &&
       chats[activeChat] &&
-      (!chats[activeChat].messages || chats[activeChat].messages.length === 0)
+      (!chats[activeChat].messages || chats[activeChat].messages.length === 0) &&
+      !fetchedChatsRef.current.has(activeChat)
     ) {
+      fetchedChatsRef.current.add(activeChat);
       dispatch(fetchChatMessages({ chatId: activeChat }));
     }
   }, [activeChat, dispatch, chats]);
@@ -449,8 +462,11 @@ const Messaging = () => {
 
   // eslint-disable-next-line require-jsdoc
   const handleChatSelect = (chatId: string) => {
-    dispatch(setActiveChat(chatId));
-    dispatch(acknowledgeMessages({ chatId: chatId }));
+    if (user) {
+      dispatch(setActiveChat(chatId));
+      dispatch(acknowledgeMessages({ chatId: chatId }));
+      dispatch(resetUnreadCount({ chatId, userId: user._id }));
+    }
   };
 
   /**

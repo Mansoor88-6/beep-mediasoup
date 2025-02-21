@@ -138,7 +138,7 @@ export class MediaHandler {
       const thumbnailFileName = `thumb_${uniqueFileName}${
         metadata.type === "video" ? ".jpg" : path.extname(file.originalname)
       }`;
-      console.log("thumbnailFileName", thumbnailFileName);
+
       const thumbnailPath = path.join(
         MediaHandler.THUMBNAIL_DIR,
         thumbnailFileName
@@ -152,7 +152,6 @@ export class MediaHandler {
         duration: metadata.duration,
       });
 
-      console.log("thumnail url check", metadata);
       if (metadata.type === "image") {
         try {
           const imageInfo = await sharp(filePath).metadata();
@@ -185,7 +184,6 @@ export class MediaHandler {
           metadata.height = videoInfo.height;
           metadata.duration = videoInfo.duration;
           metadata.thumbnailUrl = `/uploads/thumbnails/${thumbnailFileName}`;
-          console.log("thumnail url check", metadata);
         } catch (error) {
           logger.error("Failed to generate video thumbnail:", error);
           throw error;

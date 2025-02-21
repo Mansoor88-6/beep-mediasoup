@@ -19,10 +19,10 @@ const badgeStyle = (isOnline: boolean) => {
       box-shadow: 0 0 0 2px #fff;
       width: 8px;
       height: 8px;
-      position: absolute;
-      bottom: 2px;
-      right: 2px;
-      transform: translate(40%, 40%);
+      top: auto !important;
+      bottom: 2px !important;
+      right: 2px !important;
+      transform: none !important;
       border-radius: 50%;
 
       &::after {

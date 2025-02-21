@@ -102,7 +102,9 @@ const Message: React.FC<IMessageProps & { isGroup?: boolean; sender?: IParticipa
           className={`relative ${
             received ? 'bg-white' : 'bg-[#E3F7ED]'
           } rounded-lg px-4 py-2 shadow-sm`}>
-          <Text>{text}</Text>
+          <Text className="whitespace-pre-wrap break-words" style={{ display: 'block' }}>
+            {text}
+          </Text>
           <div className="flex items-center justify-end gap-1 mt-1">
             <Text className="text-xs text-gray-500">
               {timestamp ? formatDistanceToNow(new Date(timestamp), { addSuffix: true }) : ''}
@@ -112,11 +114,11 @@ const Message: React.FC<IMessageProps & { isGroup?: boolean; sender?: IParticipa
                 {isSent ? (
                   <>
                     <CheckOutlined
-                      className={`${seenBy.length > 0 ? 'text-blue-500' : 'text-gray-400'}`}
+                      className={`${seenBy?.length > 0 ? 'text-blue-500' : 'text-gray-400'}`}
                     />
                     <CheckOutlined
                       className={`-ml-[8px] ${
-                        seenBy.length > 0 ? 'text-blue-500' : 'text-gray-400'
+                        seenBy?.length > 0 ? 'text-blue-500' : 'text-gray-400'
                       }`}
                     />
                   </>
