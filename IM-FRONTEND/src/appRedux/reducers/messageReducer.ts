@@ -1,5 +1,4 @@
 /* eslint-disable jsdoc/check-types */
-import { ONE } from 'constant';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { MessageState } from 'types/ReduxTypes/message';
 import { IChat, IMessage } from 'views/messaging/components/types';
@@ -104,9 +103,14 @@ const messageSlice = createSlice({
         state.chats[chatId].messages.push(message);
         if (state.activeChat !== chatId) {
           const chat = state.chats[chatId];
+          // fix lint Expected block statement surrounding arrow body
           const recipients = chat.participants
-            .filter((p) => p._id !== message.senderId)
-            .map((p) => p._id);
+            .filter((p) => {
+              return p._id !== message.senderId;
+            })
+            .map((p) => {
+              return p._id;
+            });
 
           recipients.forEach((recipientId) => {
             state.chats[chatId].unreadCount = {

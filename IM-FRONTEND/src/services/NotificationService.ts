@@ -10,7 +10,6 @@ class NotificationService {
    * Initialize the notification service
    */
   public static async initialize() {
-
     // Check if notifications are supported
     if (!('Notification' in window)) {
       console.warn('This browser does not support notifications');

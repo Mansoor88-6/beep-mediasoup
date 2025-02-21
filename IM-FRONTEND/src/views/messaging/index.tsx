@@ -48,7 +48,7 @@ import {
   fetchChats,
   acknowledgeMessages
 } from 'appRedux/actions/messageAction';
-import { setActiveChat } from 'appRedux/reducers/messageReducer';
+import { setActiveChat, resetUnreadCount } from 'appRedux/reducers/messageReducer';
 import { AuthSelector, MessageSelector, RootState } from 'appRedux/reducers';
 import NewChatDropdown from './components/NewChatDropdown';
 import Groups from './components/groups/GroupList';
@@ -66,7 +66,6 @@ import VoiceRecorder from './components/media/VoiceRecorder';
 import type { RcFile } from 'antd/es/upload';
 import { SearchProvider, useSearch } from './context/SearchContext';
 import OnlineStatusAvatar from 'components/common/OnlineStatusAvatar';
-import { resetUnreadCount } from 'appRedux/reducers/messageReducer';
 
 // Media upload constants
 export const MAX_IMAGE_SIZE = 16 * 1024 * 1024; // 16MB
@@ -189,6 +188,10 @@ const MessageInputForm = memo(
       setMessageText('');
     };
 
+    /**
+     * Handles key press event
+     * @param {React.KeyboardEvent<HTMLTextAreaElement>} e - The key press event
+     */
     const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -302,7 +305,9 @@ const MessageInputForm = memo(
             placeholder="Type message here"
             className="rounded-full bg-white resize-none"
             value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
+            onChange={(e) => {
+              return setMessageText(e.target.value);
+            }}
             onKeyPress={handleKeyPress}
             autoSize={{ minRows: 1, maxRows: 4 }}
           />

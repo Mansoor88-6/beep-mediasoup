@@ -2,7 +2,6 @@
 /* eslint-disable no-magic-numbers */
 import React from 'react';
 import { Badge } from 'antd';
-import { THREE, ZERO } from 'constant';
 import { IChatListItemProps } from '../types';
 import { UserOutlined } from '@ant-design/icons';
 import { useSelector } from 'react-redux';

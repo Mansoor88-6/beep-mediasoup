@@ -62,7 +62,6 @@ const CallModal: React.FC = () => {
 
       try {
         if (videoElement.srcObject !== localStream) {
-
           videoElement.srcObject = localStream;
           await videoElement.play();
 
@@ -180,7 +179,7 @@ const CallModal: React.FC = () => {
 
     try {
       // Request media permissions first
-      const stream = await navigator.mediaDevices.getUserMedia({
+      await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,

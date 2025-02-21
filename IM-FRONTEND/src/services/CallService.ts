@@ -381,7 +381,6 @@ class CallService {
    */
   public static async endCall(roomId: string, isRejected: boolean = false) {
     try {
-
       // Get callLogId and isIncoming from Redux state before any cleanup
       const callLogId = store.getState().call.callLogId;
       const isIncoming = store.getState().call.isIncoming;

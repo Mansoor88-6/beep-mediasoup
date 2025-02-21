@@ -95,7 +95,6 @@ export const sendMessage = createAsyncThunk<
         }
         throw error;
       }
-
     }
 
     const currentChat = (getState() as any).messages.chats[chatId];
@@ -356,12 +355,11 @@ export const removeMessageReaction = createAsyncThunk(
       }
 
       // Then emit to socket
-      const response = await Socket.socketEmit(events.REMOVE_REACTION, {
+      await Socket.socketEmit(events.REMOVE_REACTION, {
         messageId: messageId,
         emoji: emoji,
         userId: currentUser._id
       });
-
     } catch (error) {
       console.error('Failed to remove reaction:', error);
       throw error;
