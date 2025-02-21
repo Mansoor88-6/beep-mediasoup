@@ -18,34 +18,35 @@ const messageSlice = createSlice({
     setActiveChat: (state, action: PayloadAction<string>) => {
       state.activeChat = action.payload;
     },
-    updateChat: (state, action: PayloadAction<IChat>) => {
-      const chat = action.payload;
-      const updatedChats = {
-        [chat._id]: {
-          ...state.chats[chat._id],
-          ...chat,
-          type: chat.type || 'individual',
-          participants: chat.participants.map((p) => {
-            return {
-              ...p,
-              role: p.role || 'member'
-            };
-          }),
-          updatedAt: chat.updatedAt || new Date().toISOString()
-        },
-        ...state.chats
+    updateChat: (state, { payload }: PayloadAction<IChat>) => {
+      const chat = payload;
+      const baseChat = {
+        ...state.chats[chat._id],
+        ...chat,
+        type: chat.type || 'individual',
+        participants: chat.participants.map((p) => {
+          return {
+            ...p,
+            role: p.role || 'member'
+          };
+        }),
+        updatedAt: chat.updatedAt || new Date().toISOString()
       };
 
-      const sortedChats = Object.fromEntries(
-        Object.entries(updatedChats).sort(([, a], [, b]) => {
-          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-        })
-      );
+      if (chat.type === 'group') {
+        const updatedChats = {
+          [chat._id]: baseChat,
+          ...state.chats
+        };
 
-      return {
-        ...state,
-        chats: sortedChats
-      };
+        state.chats = Object.fromEntries(
+          Object.entries(updatedChats).sort(([, a], [, b]) => {
+            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+          })
+        );
+      } else {
+        state.chats[chat._id] = baseChat;
+      }
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
