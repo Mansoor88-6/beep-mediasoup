@@ -18,7 +18,9 @@ const ChatList: React.FC<IChatListProps> = ({ onChatSelect }) => {
     return state.messages;
   });
   const { filterChats } = useSearch();
-  const currentUser = useSelector((state: RootState) => state.auth.user);
+  const currentUser = useSelector((state: RootState) => {
+    return state.auth.user;
+  });
 
   // Filter and sort chats
   const sortedChats = useMemo(() => {

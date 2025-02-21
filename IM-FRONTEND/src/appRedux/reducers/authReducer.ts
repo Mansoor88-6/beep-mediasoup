@@ -1,4 +1,3 @@
-/* eslint-disable jsdoc/check-types */
 import { removeSecondaryToken } from 'utils/Logout';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, IUser, IUserAavatar } from 'types/ReduxTypes/auth';

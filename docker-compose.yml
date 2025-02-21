@@ -30,7 +30,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     env_file:
-      - ./IM-BACKEND/.env.development
+      - ./IM-BACKEND/.env.production
     volumes:
       - ./IM-BACKEND/uploads:/usr/src/app/uploads
       - ./IM-BACKEND/logs:/usr/src/app/logs

@@ -1,4 +1,4 @@
-import { combineReducers, CombinedState, Reducer } from '@reduxjs/toolkit';
+import { combineReducers } from '@reduxjs/toolkit';
 import { RESET } from 'appRedux/middleware/root/events';
 
 // reducers

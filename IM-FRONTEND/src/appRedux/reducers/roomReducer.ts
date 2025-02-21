@@ -1,4 +1,3 @@
-/* eslint-disable jsdoc/check-types */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { IRoom, RoomState } from 'types/ReduxTypes/room';
 
