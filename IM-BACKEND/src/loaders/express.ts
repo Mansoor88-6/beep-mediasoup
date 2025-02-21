@@ -109,12 +109,12 @@ export default class ExpressLoader {
    * @returns {void}
    */
   public async initializeControllers(): Promise<void> {
-    this.app.use(cookieParser());
-    this.app.use(cors(this.exceptionCORS));
-    // cors({
-    //   origin: "*",
-    //   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    // })
+    // this.app.use(cookieParser());
+    // this.app.use(cors(this.exceptionCORS));
+    cors({
+      origin: "*",
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    })
 
     this.app.use(express.json({ limit: "80mb" }));
     this.app.use(express.urlencoded({ extended: true, limit: "80mb" }));
