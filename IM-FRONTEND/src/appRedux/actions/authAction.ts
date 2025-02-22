@@ -111,12 +111,12 @@ export const register = createAsyncThunk(
 export const loadUser = createAsyncThunk('auth/loadUser', async (_, { dispatch }) => {
   try {
     const res = await BackendInstance.get('user/authorization');
-    const { role, token } = res.data.data;
+    const { role } = res.data.data;
     await dispatch(
       userLoaded({
         role: role,
         user: { ...res.data.data } as IUser,
-        token: token,
+        // token: token,
         isAuthenticated: true
       })
     );
