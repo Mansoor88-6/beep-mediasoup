@@ -274,7 +274,7 @@ export default class AuthController {
       const data: Record<string, unknown> = {
         ...completeUser,
         environment: globals.ENV,
-        // token: (req.cookies as Record<string, unknown>).accessToken,
+        token: (req.cookies as Record<string, unknown>).accessToken,
       };
       return prepareSuccessResponse(
         res,
