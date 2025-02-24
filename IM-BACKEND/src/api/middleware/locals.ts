@@ -61,10 +61,8 @@ export function isAuthenticated(): Handler {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Get token from Authorization header or cookies
-      // console.log(req.header("Authorization"));
-      // console.log(req.cookies?.accessToken);
       const token =
-        req.header("Authorization")?.split(" ")[1]
+        req.header("Authorization")?.split(" ")[1] || req.cookies.accessToken;
 
       if (!token) {
         return prepareFailedResponse(

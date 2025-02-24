@@ -19,14 +19,14 @@ const AuthSlice = createSlice({
   initialState: initialState,
   reducers: {
     userLoaded: (state, { payload }: PayloadAction<AuthState>) => {
-      // const authToken = payload.token;
-      // delete payload.token;
+      const authToken = payload.token;
+      delete payload.token;
 
       state.isAuthenticated = payload.isAuthenticated;
       state.loading = false;
       state.role = payload.role;
       state.user = payload.user;
-      // state.token = authToken;
+      state.token = authToken;
     },
     validToken: (state, { payload }: PayloadAction<AuthState>) => {
       state.invalidToken = payload.invalidToken;
