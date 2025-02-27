@@ -54,7 +54,7 @@ export default class SocketIO {
 
     this.onlineUsersInterval = setInterval(() => {
       this.broadcastOnlineUsers();
-    }, 60000); // 60000 ms = 1 minute
+    }, 60000);
   }
 
   private broadcastOnlineUsers(): void {
@@ -1070,11 +1070,35 @@ export default class SocketIO {
         events.BUSY_CALL,
         async (data: { callLogId: string; userId: string }) => {
           try {
-            await CallLogService.updateParticipantStatus(
+            // Update the participant status to BUSY
+            const callLog = await CallLogService.updateParticipantStatus(
               data.callLogId,
               data.userId,
               CallStatus.BUSY
             );
+
+            // Find the caller to notify them that the recipient is busy
+            if (callLog) {
+              // Find the initiator participant
+              const initiator = callLog.participants.find(
+                (p) => p.role === "initiator"
+              );
+              if (initiator) {
+                const initiatorSocketId = SocketIO.onlineUsers.get(
+                  initiator.userId.toString()
+                );
+                if (initiatorSocketId) {
+                  // Notify the caller that the recipient is busy
+                  SocketIO.io
+                    .to(initiatorSocketId)
+                    .emit(events.CALL_STATUS_UPDATE, {
+                      callLogId: data.callLogId,
+                      userId: data.userId,
+                      status: CallStatus.BUSY,
+                    });
+                }
+              }
+            }
           } catch (error) {
             logger.error(`[Socket:BUSY_CALL] Error:`, error);
           }

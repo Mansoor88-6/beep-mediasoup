@@ -25,6 +25,8 @@ const CallModal: React.FC = () => {
   const dispatch = useDispatch();
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [permissionGranted, setPermissionGranted] = useState(false);
+
   const {
     isIncoming,
     isOngoing,
@@ -46,7 +48,33 @@ const CallModal: React.FC = () => {
   const remoteAudioRefs = useRef<{ [key: string]: HTMLAudioElement | null }>({});
   const attachAttemptRef = useRef<number>(0);
 
-  // Effect for local video stream
+  // Effect to reset video references when call state changes
+  useEffect(() => {
+    // When a call ends or a new call starts, reset the video references
+    if (!isOngoing) {
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = null;
+      }
+
+      // Reset all remote video references
+      Object.keys(remoteVideoRefs.current).forEach((userId) => {
+        const videoRef = remoteVideoRefs.current[userId];
+        if (videoRef) {
+          videoRef.srcObject = null;
+        }
+
+        const audioRef = remoteAudioRefs.current[userId];
+        if (audioRef) {
+          audioRef.srcObject = null;
+        }
+      });
+
+      // Reset permission state
+      setPermissionGranted(false);
+    }
+  }, [isOngoing]);
+
+  // Effect for local video stream - improved to handle reattachment
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
 
@@ -61,10 +89,24 @@ const CallModal: React.FC = () => {
       }
 
       try {
+        // Always reset srcObject before attaching to ensure fresh connection
         if (videoElement.srcObject !== localStream) {
+          // If there's an existing srcObject, clean it up first
+          if (videoElement.srcObject) {
+            try {
+              const existingStream = videoElement.srcObject as MediaStream;
+              existingStream.getTracks().forEach((track) => {
+                return track.stop();
+              });
+              videoElement.srcObject = null;
+            } catch (error) {
+              console.warn('Error cleaning up existing stream:', error);
+            }
+          }
+
+          // Now attach the new stream
           videoElement.srcObject = localStream;
           await videoElement.play();
-
           return true;
         }
         return true;
@@ -101,15 +143,14 @@ const CallModal: React.FC = () => {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = null;
-      }
       attachAttemptRef.current = 0;
     };
   }, [localStream, isVideo]);
 
   // Handle remote streams
   useEffect(() => {
+    if (!permissionGranted && !isIncoming) return;
+
     Object.entries(remoteStreams).forEach(([userId, stream]) => {
       // Stop any playing sounds when we get a remote stream
       AudioService.stopAll();
@@ -142,7 +183,17 @@ const CallModal: React.FC = () => {
         }
       }
     });
-  }, [remoteStreams]);
+  }, [remoteStreams, permissionGranted, isIncoming]);
+
+  // Effect to fetch remote streams when permissions are granted
+  useEffect(() => {
+    if (permissionGranted && roomId && isOngoing && !isIncoming) {
+      // Re-fetch existing producers in the room to ensure we have all remote streams
+      CallService.refreshRemoteStreams(roomId).catch((error) => {
+        console.error('Error refreshing remote streams:', error);
+      });
+    }
+  }, [permissionGranted, roomId, isOngoing, isIncoming]);
 
   // Handle call sounds
   useEffect(() => {
@@ -171,6 +222,21 @@ const CallModal: React.FC = () => {
     };
   }, [isIncoming, isOngoing, participants]);
 
+  // Effect to handle permission granting for outgoing calls
+  useEffect(() => {
+    if (!isIncoming && localStream && !permissionGranted) {
+      setPermissionGranted(true);
+
+      // If we're in an ongoing call and we just got permissions,
+      // refresh remote streams to ensure we get all remote participants
+      if (isOngoing && roomId) {
+        CallService.refreshRemoteStreams(roomId).catch((error) => {
+          console.error('Error refreshing remote streams after permission grant:', error);
+        });
+      }
+    }
+  }, [isIncoming, localStream, permissionGranted, isOngoing, roomId]);
+
   /**
    * Handles accepting an incoming call
    */
@@ -193,6 +259,9 @@ const CallModal: React.FC = () => {
             }
           : false
       });
+
+      // Mark permissions as granted
+      setPermissionGranted(true);
 
       // Stop the incoming call sound
       AudioService.stopAll();
@@ -232,6 +301,9 @@ const CallModal: React.FC = () => {
       } else {
         await CallService.endCall(roomId);
       }
+
+      // Reset permission state
+      setPermissionGranted(false);
     }
   };
 

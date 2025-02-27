@@ -135,6 +135,16 @@ function initializeSocket(userId: string, dispatch: AppDispatch) {
         return;
       }
 
+      // Check if user is already in an ongoing call
+      if (store.getState().call.isOngoing && socket) {
+        // User is already in a call, send busy status and don't show incoming call UI
+        socket.emit('busy_call', {
+          callLogId: callLogId,
+          userId: store.getState().auth.user?._id
+        });
+        return;
+      }
+
       NotificationService.showIncomingCallNotification(fromUsername, isVideo, isGroup, groupName);
 
       dispatch(

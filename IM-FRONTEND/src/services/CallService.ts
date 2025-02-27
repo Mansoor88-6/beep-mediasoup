@@ -17,6 +17,8 @@ import {
   IceParameters,
   RtpParameters
 } from 'mediasoup-client/lib/types';
+import { notification } from 'antd';
+import { CALL_STATUS_UPDATE } from 'appRedux/middleware/socket/events';
 /**
  * CallService class for handling call-related operations
  */
@@ -122,13 +124,7 @@ class CallService {
               device: 'web'
             }
           },
-          (response: {
-            error?: any;
-            data?: {
-              roomId: string;
-              callLogId: string;
-            };
-          }) => {
+          (response: any) => {
             if (response?.error) reject(response.error);
             else resolve(response);
           }
@@ -136,10 +132,14 @@ class CallService {
       });
 
       if (createRoomResponse.error) {
-        throw createRoomResponse.error;
+        throw new Error(createRoomResponse.error);
       }
 
-      // Set call information in Redux
+      if (!createRoomResponse.data) {
+        throw new Error('Failed to create room: No data returned');
+      }
+
+      // Store the call log ID in Redux
       store.dispatch(
         setCallInfo({
           callerInfo: {
@@ -147,14 +147,15 @@ class CallService {
             isGroupCall: toUserIds.length > 1,
             groupName: groupName
           },
-          callLogId: createRoomResponse.data?.callLogId
+          callLogId: createRoomResponse.data.callLogId
         })
       );
 
+      // 2. Create device
       this.device = new Device();
 
-      // 2. Join room
-      const response = await new Promise<{
+      // 3. Join room
+      const joinRoomResponse = await this.emitAsync<{
         data: {
           routerRtpCapabilities: any;
           transportOptions: {
@@ -172,205 +173,128 @@ class CallService {
             };
           };
         };
-      }>((resolve, reject) => {
-        this.socket?.emit(
-          'join_room',
-          {
-            roomId: roomId,
-            userId: store.getState().auth.user?._id,
-            userName: store.getState().auth.user?.username,
-            callLogId: createRoomResponse.data?.callLogId,
-            deviceInfo: {
-              browser: navigator.userAgent,
-              os: navigator.platform,
-              device: 'web'
-            }
-          },
-          (response: any) => {
-            if (response?.error) reject(response.error);
-            else resolve(response);
-          }
-        );
+      }>('join_room', {
+        roomId: roomId,
+        userId: store.getState().auth.user?._id,
+        userName: store.getState().auth.user?.username,
+        callLogId: createRoomResponse.data.callLogId,
+        deviceInfo: {
+          browser: navigator.userAgent,
+          os: navigator.platform,
+          device: 'web'
+        }
       });
 
       // Load the device with router RTP capabilities
-      await this.device?.load({ routerRtpCapabilities: response.data.routerRtpCapabilities });
-
-      // Create send transport using options from join_room
-      const { send, receive } = response.data.transportOptions;
-      this.sendTransport = this.device?.createSendTransport(send);
-
-      // Handle send transport connection
-      this.sendTransport.on(
-        'connect',
-        async (
-          { dtlsParameters }: { dtlsParameters: DtlsParameters },
-          callback: () => void,
-          errback: (error: Error) => void
-        ) => {
-          try {
-            await new Promise<void>((resolve, reject) => {
-              if (!this.socket) {
-                reject(new Error('Socket not initialized'));
-                return;
-              }
-              this.socket.emit(
-                'connect_transport',
-                {
-                  roomId: roomId,
-                  userId: store.getState().auth.user?._id,
-                  transportId: this.sendTransport.id,
-                  dtlsParameters: dtlsParameters
-                },
-                (response: any) => {
-                  if (response?.error) reject(response.error);
-                  else resolve();
-                }
-              );
-            });
-            callback();
-          } catch (error) {
-            errback(error as Error);
-          }
-        }
-      );
-
-      // Handle send transport production
-      this.sendTransport.on(
-        'produce',
-        async (
-          { kind, rtpParameters }: { kind: 'audio' | 'video'; rtpParameters: RtpParameters },
-          callback: (arg: { id: string }) => void,
-          errback: (error: Error) => void
-        ) => {
-          try {
-            const { id } = await new Promise<{ id: string }>((resolve, reject) => {
-              if (!this.socket) {
-                reject(new Error('Socket not initialized'));
-                return;
-              }
-              this.socket.emit(
-                'produce',
-                {
-                  roomId: roomId,
-                  userId: store.getState().auth.user?._id,
-                  transportId: this.sendTransport.id,
-                  kind: kind,
-                  rtpParameters: rtpParameters
-                },
-                (response: any) => {
-                  if (response?.error) reject(response.error);
-                  else resolve(response);
-                }
-              );
-            });
-            // eslint-disable-next-line n/no-callback-literal
-            callback({ id: id });
-          } catch (error) {
-            errback(error as Error);
-          }
-        }
-      );
-
-      // Get local media stream
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        },
-        video: isVideo
-          ? {
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-              frameRate: { ideal: 30 }
-            }
-          : false
+      await this.device.load({
+        routerRtpCapabilities: joinRoomResponse.data.routerRtpCapabilities
       });
 
-      if (!stream.active) {
-        throw new Error('Failed to get active media stream');
-      }
+      // Create send and receive transports
+      const { send, receive } = joinRoomResponse.data.transportOptions;
+      this.sendTransport = this.device.createSendTransport(send);
+      this.receiveTransport = this.device.createRecvTransport(receive);
 
-      store.dispatch(setLocalStream(stream));
+      // Set up transport event handlers
+      this.setupTransportHandlers(roomId);
 
-      // Produce audio and video tracks
-      if (stream.getAudioTracks().length > 0) {
-        const audioTrack = stream.getAudioTracks()[0];
-        if (audioTrack.readyState === 'ended') {
-          throw new Error('Audio track is ended, cannot produce');
+      // Get local media stream BEFORE proceeding with the call
+      try {
+        // Request media permissions first
+        // Force stop any existing tracks before requesting new ones
+        if (this.localStream) {
+          this.localStream.getTracks().forEach((track) => {
+            track.stop();
+          });
+          this.localStream = null;
         }
-        const audioProducer = await this.sendTransport.produce({
-          track: audioTrack,
-          codecOptions: {
-            opusStereo: true,
-            opusDtx: true
-          }
+
+        // Clear any existing local stream in Redux
+        store.dispatch(setLocalStream(null));
+
+        // Request new media stream with a small delay to ensure previous streams are fully released
+        await new Promise((resolve) => {
+          return setTimeout(resolve, 100);
         });
-        store.dispatch(addProducer({ kind: 'audio', producer: audioProducer }));
-      }
 
-      if (isVideo && stream.getVideoTracks().length > 0) {
-        const videoTrack = stream.getVideoTracks()[0];
-        if (videoTrack.readyState === 'ended') {
-          throw new Error('Video track is ended, cannot produce');
-        }
-        const videoProducer = await this.sendTransport.produce({
-          track: videoTrack,
-          encodings: [
-            { maxBitrate: 100000, scaleResolutionDownBy: 4 },
-            { maxBitrate: 300000, scaleResolutionDownBy: 2 },
-            { maxBitrate: 900000, scaleResolutionDownBy: 1 }
-          ],
-          codecOptions: {
-            videoGoogleStartBitrate: 1000
-          }
-        });
-        store.dispatch(addProducer({ kind: 'video', producer: videoProducer }));
-      }
-
-      // Create receive transport using options from join_room
-      this.receiveTransport = this.device?.createRecvTransport(receive);
-
-      // Handle receive transport connection
-      this.receiveTransport.on(
-        'connect',
-        async (
-          { dtlsParameters }: { dtlsParameters: DtlsParameters },
-          callback: () => void,
-          errback: (error: Error) => void
-        ) => {
-          try {
-            await new Promise<void>((resolve, reject) => {
-              if (!this.socket) {
-                reject(new Error('Socket not initialized'));
-                return;
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          },
+          video: isVideo
+            ? {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 30 }
               }
-              this.socket.emit(
-                'connect_transport',
-                {
-                  roomId: roomId,
-                  userId: store.getState().auth.user?._id,
-                  transportId: this.receiveTransport.id,
-                  dtlsParameters: dtlsParameters
-                },
-                (response: any) => {
-                  if (response?.error) reject(response.error);
-                  else resolve();
-                }
-              );
-            });
-            callback();
-          } catch (error) {
-            errback(error as Error);
-          }
-        }
-      );
+            : false
+        });
 
-      store.dispatch(setOngoingCall(true));
+        if (!stream.active) {
+          throw new Error('Failed to get active media stream');
+        }
+
+        // Store the local stream both in the class and in Redux
+        this.localStream = stream;
+        store.dispatch(setLocalStream(stream));
+
+        // Set call as ongoing in Redux
+        store.dispatch(setOngoingCall(true));
+
+        // Produce audio and video tracks
+        if (stream.getAudioTracks().length > 0) {
+          const audioTrack = stream.getAudioTracks()[0];
+          if (audioTrack.readyState === 'ended') {
+            throw new Error('Audio track is ended, cannot produce');
+          }
+          const audioProducer = await this.sendTransport.produce({
+            track: audioTrack,
+            codecOptions: {
+              opusStereo: true,
+              opusDtx: true
+            }
+          });
+          store.dispatch(addProducer({ kind: 'audio', producer: audioProducer }));
+        }
+
+        if (isVideo && stream.getVideoTracks().length > 0) {
+          const videoTrack = stream.getVideoTracks()[0];
+          if (videoTrack.readyState === 'ended') {
+            throw new Error('Video track is ended, cannot produce');
+          }
+          const videoProducer = await this.sendTransport.produce({
+            track: videoTrack,
+            encodings: [
+              { maxBitrate: 100000, scaleResolutionDownBy: 4 },
+              { maxBitrate: 300000, scaleResolutionDownBy: 2 },
+              { maxBitrate: 900000, scaleResolutionDownBy: 1 }
+            ],
+            codecOptions: {
+              videoGoogleStartBitrate: 1000
+            }
+          });
+          store.dispatch(addProducer({ kind: 'video', producer: videoProducer }));
+        }
+
+        // After permissions are granted and local stream is set up,
+        // check for any existing producers in the room
+        await this.refreshRemoteStreams(roomId);
+      } catch (error) {
+        console.error('Error getting media stream:', error);
+        // End the call if we can't get media permissions
+        if (error instanceof Error && error.name === 'NotAllowedError') {
+          await this.endCall(roomId);
+          throw new Error('Media permissions denied');
+        }
+        throw error;
+      }
+
+      return createRoomResponse.data.roomId;
     } catch (error) {
       console.error('Error starting call:', error);
-      this.endCall(roomId);
+      throw error;
     }
   }
 
@@ -702,6 +626,22 @@ class CallService {
       // Set up transport event handlers
       this.setupTransportHandlers(roomId);
 
+      // Force stop any existing tracks before requesting new ones
+      if (this.localStream) {
+        this.localStream.getTracks().forEach((track) => {
+          track.stop();
+        });
+        this.localStream = null;
+      }
+
+      // Clear any existing local stream in Redux
+      store.dispatch(setLocalStream(null));
+
+      // Request new media stream with a small delay to ensure previous streams are fully released
+      await new Promise((resolve) => {
+        return setTimeout(resolve, 100);
+      });
+
       // Get local media stream
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -872,28 +812,16 @@ class CallService {
   }
 
   /**
-   * Set up common event listeners
-   * @param roomId - The ID of the room
+   * Set up common event listeners for call
+   * @param roomId - The room ID
    */
   private static setupCommonEventListeners(roomId: string) {
     if (!this.socket) return;
 
-    // First remove any existing listeners to prevent duplicates
-    this.socket.off('new_producer');
-    this.socket.off('producer_closed');
-    this.socket.off('peer_left');
-    this.socket.off('call_accepted');
-
     // Listen for new producers
     this.socket.on('new_producer', async ({ producerId, producerPeerId, kind }) => {
       try {
-        if (!this.receiveTransport) {
-          return;
-        }
-
-        if (producerPeerId === store.getState().auth.user?._id) {
-          return;
-        }
+        if (producerPeerId === store.getState().auth.user?._id) return;
 
         await this.handleProducerConsumption(producerId, producerPeerId, kind, roomId);
       } catch (error) {
@@ -936,39 +864,47 @@ class CallService {
     this.socket.on('call_accepted', async ({ roomId, userId, userName }) => {
       store.dispatch(setOngoingCall(true));
 
-      // Get producers from the peer who just joined
-      try {
-        const producersResponse = await this.emitAsync<{
-          error?: string;
-          data?: Array<{
-            producerId: string;
-            producerPeerId: string;
-            kind: string;
-          }>;
-        }>('get_producer', {
-          roomId: roomId,
-          userId: store.getState().auth.user?._id
+      // Add the user to participants if not already there
+      // const participants = store.getState().call.participants;
+      // if (!participants[userId]) {
+      //   const updatedParticipants = {
+      //     ...participants,
+      //     [userId]: { id: userId, username: userName }
+      //   };
+      //   // We would need to update participants in Redux here if needed
+      // }
+
+      // If we have local stream, it means we have permissions already
+      // So we can immediately try to get the remote streams
+      if (store.getState().call.localStream) {
+        try {
+          // Refresh remote streams to ensure we get the stream from the user who just accepted
+          await this.refreshRemoteStreams(roomId);
+        } catch (error) {
+          console.error('Error getting remote streams after call acceptance:', error);
+        }
+      }
+    });
+
+    // Listen for call status updates (busy, rejected, etc.)
+    this.socket.on(CALL_STATUS_UPDATE, async ({ callLogId, userId, status }) => {
+      // If the status is BUSY, end the call and show appropriate message
+      if (status === 'busy') {
+        // Get the username from participants
+        const participants = store.getState().call.participants;
+        const username = participants[userId]?.username || 'User';
+
+        // Show notification that user is busy
+        notification.info({
+          message: 'Call Ended',
+          description: `${username} is busy on another call`,
+          placement: 'topRight'
         });
 
-        if (producersResponse.error) {
-          throw new Error(producersResponse.error);
+        // End the call automatically
+        if (roomId) {
+          await this.endCall(roomId);
         }
-
-        // Consume the new peer's producers
-        if (producersResponse.data) {
-          for (const producer of producersResponse.data) {
-            if (producer.producerPeerId === userId) {
-              await this.handleProducerConsumption(
-                producer.producerId,
-                producer.producerPeerId,
-                producer.kind,
-                roomId
-              );
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error handling call acceptance:', error);
       }
     });
   }
@@ -998,7 +934,24 @@ class CallService {
         }
         this.localStream = null;
       }
+
+      // Clear local stream in Redux
       store.dispatch(setLocalStream(null));
+
+      // Clear remote streams in Redux
+      const remoteStreams = store.getState().call.remoteStreams;
+      Object.entries(remoteStreams).forEach(([userId, stream]) => {
+        if (stream) {
+          try {
+            (stream as MediaStream).getTracks().forEach((track: MediaStreamTrack) => {
+              track.stop();
+            });
+          } catch (error) {
+            console.warn('Error stopping remote track:', error);
+          }
+          store.dispatch(addRemoteStream({ userId, stream: null }));
+        }
+      });
 
       // Close all producers with error handling
       for (const producer of this.producers.values()) {
@@ -1054,6 +1007,56 @@ class CallService {
     } catch (error) {
       console.error('Error in cleanupPreviousCall:', error);
       // Continue with state reset even if cleanup fails
+    }
+  }
+
+  /**
+   * Refreshes remote streams by fetching and consuming existing producers in the room
+   * This is used to ensure all remote streams are properly connected after permissions are granted
+   * @param roomId - The room ID
+   */
+  public static async refreshRemoteStreams(roomId: string) {
+    try {
+      if (!this.socket || !this.device || !this.receiveTransport) {
+        throw new Error('Call not properly initialized');
+      }
+
+      // Get existing producers in the room
+      const producersResponse = await this.emitAsync<{
+        error?: string;
+        data?: Array<{
+          producerId: string;
+          producerPeerId: string;
+          kind: string;
+        }>;
+      }>('get_producer', {
+        roomId: roomId,
+        userId: store.getState().auth.user?._id
+      });
+
+      if (producersResponse.error) {
+        throw new Error(producersResponse.error);
+      }
+
+      // Consume existing producers
+      if (producersResponse.data) {
+        for (const producer of producersResponse.data) {
+          // Skip if we're already consuming this producer
+          if (this.consumers.has(producer.producerId)) {
+            continue;
+          }
+
+          await this.handleProducerConsumption(
+            producer.producerId,
+            producer.producerPeerId,
+            producer.kind,
+            roomId
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing remote streams:', error);
+      throw error;
     }
   }
 }

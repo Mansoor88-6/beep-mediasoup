@@ -45,6 +45,7 @@ export const events = {
   REJECT_CALL: "reject_call",
   MISSED_CALL: "missed_call",
   BUSY_CALL: "busy_call",
+  CALL_STATUS_UPDATE: "call_status_update",
   CALL_QUALITY_UPDATE: "call_quality_update",
 
   // Reaction Events

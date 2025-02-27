@@ -21,6 +21,10 @@ export const NEW_PRODUCER = 'new_producer';
 export const PRODUCER_CLOSED = 'producer_closed';
 export const INCOMING_CALL = 'incoming_call';
 export const PEER_LEFT = 'peer_left';
+export const CALL_STATUS_UPDATE = 'call_status_update';
+export const REJECT_CALL = 'reject_call';
+export const MISSED_CALL = 'missed_call';
+export const BUSY_CALL = 'busy_call';
 
 // Mediasoup events
 export const GET_PRODUCER = 'get_producer';
