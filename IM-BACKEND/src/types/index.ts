@@ -63,3 +63,25 @@ export interface IAuditLoggerObj {
 export const enum SocketNamespace {
   Default = "/",
 }
+
+export interface MediasoupTypes {
+  worker: {
+    rtcMinPort: number;
+    rtcMaxPort: number;
+    logLevel: string;
+    logTags: string[];
+  };
+  router: {
+    mediaCodecs: any[];
+  };
+  webRtcTransport: {
+    listenIps: {
+      ip: string;
+      announcedIp: string;
+    }[];
+    initialAvailableOutgoingBitrate: number;
+    minimumAvailableOutgoingBitrate: number;
+    maxSctpMessageSize: number;
+    maxIncomingBitrate: number;
+  };
+}

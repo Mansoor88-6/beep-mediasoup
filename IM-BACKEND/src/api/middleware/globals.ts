@@ -7,7 +7,7 @@ import {
 } from "express";
 import { UtilityService } from "@services/helper/utility";
 import { statusCodes, globals } from "@config/globals";
-import { ServiceError } from "@customErrors/index";
+// import { ServiceError } from "@customErrors/index";
 import {
   prepareFailedResponse,
   prepareSuccessResponse,
@@ -36,7 +36,7 @@ const mongooseErrors = [
  */
 export function registerErrorHandler(router: Router): void {
   router.use(
-    (err: ServiceError, req: Request, res: Response, next: NextFunction) => {
+    (err: any, req: Request, res: Response, next: NextFunction) => {
       UtilityService.handleError(err);
       if (globals.ENV !== Environment.Production) {
         if (err.name === "MongoError" && (err as any).code == 11000) {

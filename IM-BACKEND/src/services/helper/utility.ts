@@ -4,11 +4,11 @@ import { Handler } from "express";
 import { logger } from "@config/logger";
 import fs from "fs";
 import { URL } from "url";
-import moment from "moment";
+// import moment from "moment";
 import crypto from "crypto";
 import { globals } from "@config/globals";
-import generator from "generate-password";
-import { compare, genSalt, hash } from "bcrypt";
+// import generator from "generate-password";
+// import { compare, genSalt, hash } from "bcrypt";
 import { Platform, platformMap } from "@customTypes/index";
 import {
   randomBytes,
@@ -66,57 +66,57 @@ export class UtilityService {
     };
   }
 
-  /**
-   * Get original file names.
-   *
-   * @param { Array<Express.Multer.File>} files Multer files
-   * @returns {Array<string>} returns Handler
-   */
-  public static getOriginalFilenames(
-    files: Array<Express.Multer.File>
-  ): Array<string> {
-    const zero = 0;
-    if (Array.isArray(files) && files.length > zero) {
-      return files.map((file) => {
-        return file.originalname;
-      });
-    }
-    return [];
-  }
+  // /**
+  //  * Get original file names.
+  //  *
+  //  * @param { Array<Express.Multer.File>} files Multer files
+  //  * @returns {Array<string>} returns Handler
+  //  */
+  // public static getOriginalFilenames(
+  //   files: Array<Express.Multer.File>
+  // ): Array<string> {
+  //   const zero = 0;
+  //   if (Array.isArray(files) && files.length > zero) {
+  //     return files.map((file) => {
+  //       return file.originalname;
+  //     });
+  //   }
+  //   return [];
+  // }
 
-  /**
-   * Get original file names.
-   *
-   * @param { Array<Express.Multer.File>} files Multer files
-   * @returns {Array<string>} returns Handler
-   */
-  public static getServerSideOriginalFilenames(
-    files: Array<Express.Multer.File>
-  ): Array<string> {
-    const zero = 0;
-    if (Array.isArray(files) && files.length > zero) {
-      return files.map((file) => {
-        return file.filename;
-      });
-    }
-    return [];
-  }
+  // /**
+  //  * Get original file names.
+  //  *
+  //  * @param { Array<Express.Multer.File>} files Multer files
+  //  * @returns {Array<string>} returns Handler
+  //  */
+  // public static getServerSideOriginalFilenames(
+  //   files: Array<Express.Multer.File>
+  // ): Array<string> {
+  //   const zero = 0;
+  //   if (Array.isArray(files) && files.length > zero) {
+  //     return files.map((file) => {
+  //       return file.filename;
+  //     });
+  //   }
+  //   return [];
+  // }
 
-  /**
-   * Get resolved blob names
-   *
-   * @param { Array<Express.Multer.File>} files Multer files
-   * @returns {Array<string>} returns Handler
-   */
-  public static getBlobNames(files: Array<Express.Multer.File>): Array<string> {
-    const zero = 0;
-    if (Array.isArray(files) && files.length > zero) {
-      return files.map((file) => {
-        return (file as unknown as Record<string, string>).blobName;
-      });
-    }
-    return [];
-  }
+  // /**
+  //  * Get resolved blob names
+  //  *
+  //  * @param { Array<Express.Multer.File>} files Multer files
+  //  * @returns {Array<string>} returns Handler
+  //  */
+  // public static getBlobNames(files: Array<Express.Multer.File>): Array<string> {
+  //   const zero = 0;
+  //   if (Array.isArray(files) && files.length > zero) {
+  //     return files.map((file) => {
+  //       return (file as unknown as Record<string, string>).blobName;
+  //     });
+  //   }
+  //   return [];
+  // }
 
   /**
    * Try to parse Json.
@@ -158,79 +158,79 @@ export class UtilityService {
     });
   }
 
-  /**
-   * Compare Plain text with its hash
-   * @param {string} plain Plain text to compare
-   * @param {string} plainHash Hashed text of plain to be compared with
-   * @returns {Promise<boolean>} Returns async boolean
-   */
-  public static comparePlainTextWithHash(
-    plain: string,
-    plainHash: string
-  ): Promise<boolean> {
-    return compare(plain, plainHash);
-  }
+  // /**
+  //  * Compare Plain text with its hash
+  //  * @param {string} plain Plain text to compare
+  //  * @param {string} plainHash Hashed text of plain to be compared with
+  //  * @returns {Promise<boolean>} Returns async boolean
+  //  */
+  // public static comparePlainTextWithHash(
+  //   plain: string,
+  //   plainHash: string
+  // ): Promise<boolean> {
+  //   return compare(plain, plainHash);
+  // }
 
-  /**
-   * Generate salt
-   * @param {string} length Plain text to compare
-   * @returns {Promise<string>} Returns async salted string
-   */
-  public static generateSalt(length: number): Promise<string> {
-    return genSalt(length);
-  }
+  // /**
+  //  * Generate salt
+  //  * @param {string} length Plain text to compare
+  //  * @returns {Promise<string>} Returns async salted string
+  //  */
+  // public static generateSalt(length: number): Promise<string> {
+  //   return genSalt(length);
+  // }
 
-  /**
-   * Generate hash
-   * @param {string} textToBeHashed Text to be hashed
-   * @param {string} salt Salt to be hashed with
-   * @returns {Promise<string>} Returns async hashed string
-   */
-  public static generatHash(
-    textToBeHashed: string,
-    salt: string
-  ): Promise<string> {
-    return hash(textToBeHashed, salt);
-  }
+  // /**
+  //  * Generate hash
+  //  * @param {string} textToBeHashed Text to be hashed
+  //  * @param {string} salt Salt to be hashed with
+  //  * @returns {Promise<string>} Returns async hashed string
+  //  */
+  // public static generatHash(
+  //   textToBeHashed: string,
+  //   salt: string
+  // ): Promise<string> {
+  //   return hash(textToBeHashed, salt);
+  // }
 
-  /**
-   * Generate random hex
-   * @param {number} noOfBytes number of bytes to generate, default 32
-   * @returns {Promise<string>} Returns async hashed string
-   */
-  public static generateRandomHex(
-    noOfBytes = Number(globals.DEFAULT_RANDOM_BYTES)
-  ): string {
-    return randomBytes(noOfBytes).toString("hex");
-  }
+  // /**
+  //  * Generate random hex
+  //  * @param {number} noOfBytes number of bytes to generate, default 32
+  //  * @returns {Promise<string>} Returns async hashed string
+  //  */
+  // public static generateRandomHex(
+  //   noOfBytes = Number(globals.DEFAULT_RANDOM_BYTES)
+  // ): string {
+  //   return randomBytes(noOfBytes).toString("hex");
+  // }
 
-  /**
-   * Generate random string
-   * @returns {string} Returns random string
-   */
-  public static generateRandomString(): string {
-    return generator.generate({
-      length: 8,
-      numbers: true,
-      uppercase: true,
-    });
-  }
+  // /**
+  //  * Generate random string
+  //  * @returns {string} Returns random string
+  //  */
+  // public static generateRandomString(): string {
+  //   return generator.generate({
+  //     length: 8,
+  //     numbers: true,
+  //     uppercase: true,
+  //   });
+  // }
 
-  /**
-   * Enrypt string
-   * @param {string} str String to be encrypted
-   * @returns {Promise<IUserDocument>} Get updated notification status
-   */
-  public static async encrypt(str: string): Promise<string> {
-    try {
-      return this.generatHash(
-        str,
-        await this.generateSalt(globals.SALT_LENGTH)
-      );
-    } catch (err) {
-      throw new Error(err);
-    }
-  }
+  // /**
+  //  * Enrypt string
+  //  * @param {string} str String to be encrypted
+  //  * @returns {Promise<IUserDocument>} Get updated notification status
+  //  */
+  // public static async encrypt(str: string): Promise<string> {
+  //   try {
+  //     return this.generatHash(
+  //       str,
+  //       await this.generateSalt(globals.SALT_LENGTH)
+  //     );
+  //   } catch (err) {
+  //     throw new Error(err);
+  //   }
+  // }
 
   /**
    * Extract data from email
@@ -384,25 +384,25 @@ export class UtilityService {
     }
   }
 
-  /**
-   * Delete Schedule by Id
-   * @param {string} time date time value to be checked
-   * @returns {boolean}
-   */
-  public static timeIsAfterMinimumOneMinute(time: string): boolean {
-    try {
-      const one = 1;
-      const oneMinutreFromNow = moment()
-        .add(moment.duration(one, "m"))
-        .format();
-      if (moment(time).format() > oneMinutreFromNow) {
-        return true;
-      }
-      return false;
-    } catch (err) {
-      throw new Error(err);
-    }
-  }
+  // /**
+  //  * Delete Schedule by Id
+  //  * @param {string} time date time value to be checked
+  //  * @returns {boolean}
+  //  */
+  // public static timeIsAfterMinimumOneMinute(time: string): boolean {
+  //   try {
+  //     const one = 1;
+  //     const oneMinutreFromNow = moment()
+  //       .add(moment.duration(one, "m"))
+  //       .format();
+  //     if (moment(time).format() > oneMinutreFromNow) {
+  //       return true;
+  //     }
+  //     return false;
+  //   } catch (err) {
+  //     throw new Error(err);
+  //   }
+  // }
 
   /**
    * Divide array into chunks of fix size

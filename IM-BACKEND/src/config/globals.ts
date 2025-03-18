@@ -1,5 +1,4 @@
 import EnvVar from "dotenv";
-
 import { Environment } from "@customTypes/index";
 
 if (process.env.DEPLOYMENT_ENV == "non-local") {

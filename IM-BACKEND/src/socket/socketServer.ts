@@ -2,8 +2,8 @@ import { Server as SocketServer } from "socket.io";
 import { Server as HttpServer } from "http";
 import { logger } from "@config/logger";
 import { events } from "./events";
-import Chat from "@models/components/chat/chat";
-import { Types } from "mongoose";
+// import Chat from "@models/components/chat/chat";
+// import { Types } from "mongoose";
 import { RoomManager } from "./RoomManager";
 import {
   DtlsParameters,
@@ -14,10 +14,10 @@ import {
   MediaKind,
   Transport,
 } from "mediasoup/node/lib/types";
-import { CallLogService } from "@services/components/call/callLog";
-import { CallStatus, CallType } from "@models/components/callLog/types";
-import { MessageEncryptionService } from "@services/helper/messageEncryption";
-
+// import { CallLogService } from "@services/components/call/callLog";
+// import { CallStatus, CallType } from "@models/components/callLog/types";
+// import { MessageEncryptionService } from "@services/helper/messageEncryption";
+  
 interface WebRtcTransport extends Transport {
   iceParameters: IceParameters;
   iceCandidates: IceCandidate[];
@@ -92,364 +92,364 @@ export default class SocketIO {
       });
 
       // Add typing event handlers
-      socket.on(
-        events.USER_TYPING,
-        async (data: { chatId: string; userId: string; username: string }) => {
-          try {
-            logger.info(
-              `[Socket:USER_TYPING] User ${data.username} is typing in chat ${data.chatId}`
-            );
+      // socket.on(
+      //   events.USER_TYPING,
+      //   async (data: { chatId: string; userId: string; username: string }) => {
+      //     try {
+      //       logger.info(
+      //         `[Socket:USER_TYPING] User ${data.username} is typing in chat ${data.chatId}`
+      //       );
 
-            // Find the chat to verify the user is a participant
-            const chat = await Chat.findOne({
-              _id: data.chatId,
-              "participants._id": data.userId,
-            });
+      //       // Find the chat to verify the user is a participant
+      //       const chat = await Chat.findOne({
+      //         _id: data.chatId,
+      //         "participants._id": data.userId,
+      //       });
 
-            if (!chat) {
-              logger.error(
-                `[Socket:USER_TYPING] Chat not found or user not authorized`
-              );
-              return;
-            }
+      //       if (!chat) {
+      //         logger.error(
+      //           `[Socket:USER_TYPING] Chat not found or user not authorized`
+      //         );
+      //         return;
+      //       }
 
-            // Notify other participants in the chat
-            chat.participants.forEach((participant) => {
-              if (participant._id.toString() !== data.userId) {
-                const recipientSocketId = SocketIO.onlineUsers.get(
-                  participant._id.toString()
-                );
-                if (recipientSocketId) {
-                  socket
-                    .to(recipientSocketId)
-                    .emit(events.TYPING_STATUS_UPDATE, {
-                      chatId: data.chatId,
-                      userId: data.userId,
-                      username: data.username,
-                      isTyping: true,
-                    });
-                }
-              }
-            });
-          } catch (error) {
-            logger.error(`[Socket:USER_TYPING] Error:`, error);
-          }
-        }
-      );
+      //       // Notify other participants in the chat
+      //       chat.participants.forEach((participant: any) => {
+      //         if (participant._id.toString() !== data.userId) {
+      //           const recipientSocketId = SocketIO.onlineUsers.get(
+      //             participant._id.toString()
+      //           );
+      //           if (recipientSocketId) {
+      //             socket
+      //               .to(recipientSocketId)
+      //               .emit(events.TYPING_STATUS_UPDATE, {
+      //                 chatId: data.chatId,
+      //                 userId: data.userId,
+      //                 username: data.username,
+      //                 isTyping: true,
+      //               });
+      //           }
+      //         }
+      //       });
+      //     } catch (error) {
+      //       logger.error(`[Socket:USER_TYPING] Error:`, error);
+      //     }
+      //   }
+      // );
 
-      socket.on(
-        events.USER_STOPPED_TYPING,
-        async (data: { chatId: string; userId: string; username: string }) => {
-          try {
-            logger.info(
-              `[Socket:USER_STOPPED_TYPING] User ${data.username} stopped typing in chat ${data.chatId}`
-            );
+      // socket.on(
+      //   events.USER_STOPPED_TYPING,
+      //   async (data: { chatId: string; userId: string; username: string }) => {
+      //     try {
+      //       logger.info(
+      //         `[Socket:USER_STOPPED_TYPING] User ${data.username} stopped typing in chat ${data.chatId}`
+      //       );
 
-            // Find the chat to verify the user is a participant
-            const chat = await Chat.findOne({
-              _id: data.chatId,
-              "participants._id": data.userId,
-            });
+      //       // Find the chat to verify the user is a participant
+      //       const chat = await Chat.findOne({
+      //         _id: data.chatId,
+      //         "participants._id": data.userId,
+      //       });
 
-            if (!chat) {
-              logger.error(
-                `[Socket:USER_STOPPED_TYPING] Chat not found or user not authorized`
-              );
-              return;
-            }
+      //       if (!chat) {
+      //         logger.error(
+      //           `[Socket:USER_STOPPED_TYPING] Chat not found or user not authorized`
+      //         );
+      //         return;
+      //       }
 
-            // Notify other participants in the chat
-            chat.participants.forEach((participant) => {
-              if (participant._id.toString() !== data.userId) {
-                const recipientSocketId = SocketIO.onlineUsers.get(
-                  participant._id.toString()
-                );
-                if (recipientSocketId) {
-                  socket
-                    .to(recipientSocketId)
-                    .emit(events.TYPING_STATUS_UPDATE, {
-                      chatId: data.chatId,
-                      userId: data.userId,
-                      username: data.username,
-                      isTyping: false,
-                    });
-                }
-              }
-            });
-          } catch (error) {
-            logger.error(`[Socket:USER_STOPPED_TYPING] Error:`, error);
-          }
-        }
-      );
+      //       // Notify other participants in the chat
+      //       chat.participants.forEach((participant: any) => {
+      //         if (participant._id.toString() !== data.userId) {
+      //           const recipientSocketId = SocketIO.onlineUsers.get(
+      //             participant._id.toString()
+      //           );
+      //           if (recipientSocketId) {
+      //             socket
+      //               .to(recipientSocketId)
+      //               .emit(events.TYPING_STATUS_UPDATE, {
+      //                 chatId: data.chatId,
+      //                 userId: data.userId,
+      //                 username: data.username,
+      //                 isTyping: false,
+      //               });
+      //           }
+      //         }
+      //       });
+      //     } catch (error) {
+      //       logger.error(`[Socket:USER_STOPPED_TYPING] Error:`, error);
+      //     }
+      //   }
+      // );
 
-      socket.on(
-        events.SEND_MESSAGE,
-        async (
-          data: { chatId: string; message: any; tempId: string },
-          callback: (response: { error?: string; data?: any }) => void
-        ) => {
-          try {
-            const { _id, ...messageWithoutTempId } = data.message;
+      // socket.on(
+      //   events.SEND_MESSAGE,
+      //   async (
+      //     data: { chatId: string; message: any; tempId: string },
+      //     callback: (response: { error?: string; data?: any }) => void
+      //   ) => {
+      //     try {
+      //       const { _id, ...messageWithoutTempId } = data.message;
 
-            // Get the chat to access its encryption key
-            const chat = await Chat.findOne({
-              _id: data.chatId,
-              "participants._id": messageWithoutTempId.senderId,
-            });
+      //       // Get the chat to access its encryption key
+      //       const chat = await Chat.findOne({
+      //         _id: data.chatId,
+      //         "participants._id": messageWithoutTempId.senderId,
+      //       });
 
-            if (!chat) {
-              logger.error(
-                `[Socket:SEND_MESSAGE] Chat not found or unauthorized`
-              );
-              if (callback)
-                callback({ error: "Chat not found or unauthorized" });
-              return;
-            }
+      //       if (!chat) {
+      //         logger.error(
+      //           `[Socket:SEND_MESSAGE] Chat not found or unauthorized`
+      //         );
+      //         if (callback)
+      //           callback({ error: "Chat not found or unauthorized" });
+      //         return;
+      //       }
 
-            // Create a proper message object that matches the schema
-            const messageData: {
-              _id: string;
-              senderId: string;
-              text: string;
-              timestamp: Date;
-              seenBy: string[];
-              isSent: boolean;
-              media?: {
-                url: string;
-                thumbnailUrl?: string;
-                type: string;
-                fileName: string;
-                fileSize: number;
-                mimeType: string;
-                width?: number;
-                height?: number;
-                duration?: number;
-              };
-            } = {
-              _id: new Types.ObjectId().toString(),
-              senderId: new Types.ObjectId(
-                messageWithoutTempId.senderId
-              ).toString(),
-              text: messageWithoutTempId.text || "",
-              timestamp: new Date(),
-              seenBy: [],
-              isSent: false,
-            };
+      //       // Create a proper message object that matches the schema
+      //       const messageData: {
+      //         _id: string;
+      //         senderId: string;
+      //         text: string;
+      //         timestamp: Date;
+      //         seenBy: string[];
+      //         isSent: boolean;
+      //         media?: {
+      //           url: string;
+      //           thumbnailUrl?: string;
+      //           type: string;
+      //           fileName: string;
+      //           fileSize: number;
+      //           mimeType: string;
+      //           width?: number;
+      //           height?: number;
+      //           duration?: number;
+      //         };
+      //       } = {
+      //         _id: new Types.ObjectId().toString(),
+      //         senderId: new Types.ObjectId(
+      //           messageWithoutTempId.senderId
+      //         ).toString(),
+      //         text: messageWithoutTempId.text || "",
+      //         timestamp: new Date(),
+      //         seenBy: [],
+      //         isSent: false,
+      //       };
 
-            // Handle media if present
-            if (
-              messageWithoutTempId.media &&
-              Object.keys(messageWithoutTempId.media).length > 0
-            ) {
-              const media = messageWithoutTempId.media;
+      //       // Handle media if present
+      //       if (
+      //         messageWithoutTempId.media &&
+      //         Object.keys(messageWithoutTempId.media).length > 0
+      //       ) {
+      //         const media = messageWithoutTempId.media;
 
-              const mediaData: {
-                url: string;
-                type: string;
-                fileName: string;
-                fileSize: number;
-                mimeType: string;
-                width?: number;
-                height?: number;
-                thumbnailUrl?: string;
-                duration?: number;
-              } = {
-                url: media.url,
-                type: media.type,
-                fileName: media.fileName || media.filename,
-                fileSize: media.fileSize,
-                mimeType: media.mimeType,
-              };
+      //         const mediaData: {
+      //           url: string;
+      //           type: string;
+      //           fileName: string;
+      //           fileSize: number;
+      //           mimeType: string;
+      //           width?: number;
+      //           height?: number;
+      //           thumbnailUrl?: string;
+      //           duration?: number;
+      //         } = {
+      //           url: media.url,
+      //           type: media.type,
+      //           fileName: media.fileName || media.filename,
+      //           fileSize: media.fileSize,
+      //           mimeType: media.mimeType,
+      //         };
 
-              if (typeof media.width === "number")
-                mediaData.width = media.width;
-              if (typeof media.height === "number")
-                mediaData.height = media.height;
-              if (media.thumbnailUrl || media.thumbnail) {
-                mediaData.thumbnailUrl = media.thumbnailUrl || media.thumbnail;
-              }
-              if (media.type === "voice" || media.type === "video") {
-                mediaData.duration = media.duration;
-              }
+      //         if (typeof media.width === "number")
+      //           mediaData.width = media.width;
+      //         if (typeof media.height === "number")
+      //           mediaData.height = media.height;
+      //         if (media.thumbnailUrl || media.thumbnail) {
+      //           mediaData.thumbnailUrl = media.thumbnailUrl || media.thumbnail;
+      //         }
+      //         if (media.type === "voice" || media.type === "video") {
+      //           mediaData.duration = media.duration;
+      //         }
 
-              const requiredFields = [
-                "url",
-                "type",
-                "fileName",
-                "fileSize",
-                "mimeType",
-              ] as const;
-              const missingFields = requiredFields.filter(
-                (field) => !mediaData[field as keyof typeof mediaData]
-              );
+      //         const requiredFields = [
+      //           "url",
+      //           "type",
+      //           "fileName",
+      //           "fileSize",
+      //           "mimeType",
+      //         ] as const;
+      //         const missingFields = requiredFields.filter(
+      //           (field) => !mediaData[field as keyof typeof mediaData]
+      //         );
 
-              if (missingFields.length > 0) {
-                logger.error(
-                  `[Socket:SEND_MESSAGE] Missing required media fields: ${missingFields.join(
-                    ", "
-                  )}`
-                );
-                if (callback)
-                  callback({
-                    error: `Missing required media fields: ${missingFields.join(
-                      ", "
-                    )}`,
-                  });
-                return;
-              }
+      //         if (missingFields.length > 0) {
+      //           logger.error(
+      //             `[Socket:SEND_MESSAGE] Missing required media fields: ${missingFields.join(
+      //               ", "
+      //             )}`
+      //           );
+      //           if (callback)
+      //             callback({
+      //               error: `Missing required media fields: ${missingFields.join(
+      //                 ", "
+      //               )}`,
+      //             });
+      //           return;
+      //         }
 
-              messageData.media = mediaData;
-            }
+      //         messageData.media = mediaData;
+      //       }
 
-            // Encrypt the message content
-            if (messageData.text) {
-              messageData.text = MessageEncryptionService.encryptMessage(
-                messageData.text,
-                chat.encryptionKey
-              );
-            }
+      //       // Encrypt the message content
+      //       if (messageData.text) {
+      //         messageData.text = MessageEncryptionService.encryptMessage(
+      //           messageData.text,
+      //           chat.encryptionKey
+      //         );
+      //       }
 
-            // If there's media, encrypt its metadata
-            if (messageData.media) {
-              const encryptedMedia = MessageEncryptionService.encryptMessage(
-                messageData.media,
-                chat.encryptionKey
-              );
-              messageData.media = JSON.parse(
-                MessageEncryptionService.decryptMessage(
-                  encryptedMedia,
-                  chat.encryptionKey
-                )
-              );
-            }
+      //       // If there's media, encrypt its metadata
+      //       if (messageData.media) {
+      //         const encryptedMedia = MessageEncryptionService.encryptMessage(
+      //           messageData.media,
+      //           chat.encryptionKey
+      //         );
+      //         messageData.media = JSON.parse(
+      //           MessageEncryptionService.decryptMessage(
+      //             encryptedMedia,
+      //             chat.encryptionKey
+      //           )
+      //         );
+      //       }
 
-            // Store encrypted message in chat
-            chat.messages.push(messageData);
-            chat.lastMessage = messageWithoutTempId.media
-              ? `Sent a ${messageWithoutTempId.media.type}`
-              : messageWithoutTempId.text || "";
-            chat.updatedAt = new Date();
+      //       // Store encrypted message in chat
+      //       chat.messages.push(messageData);
+      //       chat.lastMessage = messageWithoutTempId.media
+      //         ? `Sent a ${messageWithoutTempId.media.type}`
+      //         : messageWithoutTempId.text || "";
+      //       chat.updatedAt = new Date();
 
-            // Update unread count for all recipients
-            const recipients = chat.participants
-              .filter((p) => p._id.toString() !== messageWithoutTempId.senderId)
-              .map((p) => p._id.toString());
+      //       // Update unread count for all recipients
+      //       const recipients = chat.participants
+      //         .filter((p: any) => p._id.toString() !== messageWithoutTempId.senderId)
+      //         .map((p: any) => p._id.toString());
 
-            recipients.forEach((recipientId) => {
-              chat.unreadCount = {
-                ...chat.unreadCount,
-                [recipientId]: (chat.unreadCount[recipientId] || 0) + 1,
-              };
-            });
+      //       recipients.forEach((recipientId: string) => {
+      //         chat.unreadCount = {
+      //           ...chat.unreadCount,
+      //           [recipientId]: (chat.unreadCount[recipientId] || 0) + 1,
+      //         };
+      //       });
 
-            const updatedChat = await chat.save();
+      //       const updatedChat = await chat.save();
 
-            // Create a decrypted version for sending in responses
-            const decryptedMessageData = { ...messageData };
-            if (decryptedMessageData.text) {
-              decryptedMessageData.text =
-                MessageEncryptionService.decryptMessage(
-                  decryptedMessageData.text,
-                  chat.encryptionKey
-                );
-            }
-            let messageSentToAnyParticipant = false;
-            const deliveryPromises = chat.participants
-              .filter((p) => p._id.toString() !== messageWithoutTempId.senderId)
-              .map(async (participant) => {
-                const receiverSocketId = SocketIO.onlineUsers.get(
-                  participant._id.toString()
-                );
+      //       // Create a decrypted version for sending in responses
+      //       const decryptedMessageData = { ...messageData };
+      //       if (decryptedMessageData.text) {
+      //         decryptedMessageData.text =
+      //           MessageEncryptionService.decryptMessage(
+      //             decryptedMessageData.text,
+      //             chat.encryptionKey
+      //           );
+      //       }
+      //       let messageSentToAnyParticipant = false;
+      //       const deliveryPromises = chat.participants
+      //         .filter((p) => p._id.toString() !== messageWithoutTempId.senderId)
+      //         .map(async (participant: any) => {
+      //           const receiverSocketId = SocketIO.onlineUsers.get(
+      //             participant._id.toString()
+      //           );
 
-                if (receiverSocketId) {
-                  try {
-                    // If this is the first message in the chat, send the entire chat object first
-                    if (chat.messages.length === 1) {
-                      socket.to(receiverSocketId).emit(events.NEW_CHAT, {
-                        chat: {
-                          ...updatedChat.toObject(),
-                          messages: [decryptedMessageData], // Include only the current message
-                        },
-                      });
-                    } else {
-                      // For existing chats, just send the new message
-                      socket.to(receiverSocketId).emit(events.RECEIVE_MESSAGE, {
-                        chatId: data.chatId,
-                        message: decryptedMessageData,
-                      });
-                    }
-                    messageSentToAnyParticipant = true;
-                    logger.info(
-                      `[Socket:SEND_MESSAGE] Message delivered to: ${participant._id}`
-                    );
-                  } catch (err) {
-                    logger.error(
-                      `[Socket:SEND_MESSAGE] Failed to deliver to: ${participant._id}`,
-                      err
-                    );
-                  }
-                }
-              });
+      //           if (receiverSocketId) {
+      //             try {
+      //               // If this is the first message in the chat, send the entire chat object first
+      //               if (chat.messages.length === 1) {
+      //                 socket.to(receiverSocketId).emit(events.NEW_CHAT, {
+      //                   chat: {
+      //                     ...updatedChat.toObject(),
+      //                     messages: [decryptedMessageData], // Include only the current message
+      //                   },
+      //                 });
+      //               } else {
+      //                 // For existing chats, just send the new message
+      //                 socket.to(receiverSocketId).emit(events.RECEIVE_MESSAGE, {
+      //                   chatId: data.chatId,
+      //                   message: decryptedMessageData,
+      //                 });
+      //               }
+      //               messageSentToAnyParticipant = true;
+      //               logger.info(
+      //                 `[Socket:SEND_MESSAGE] Message delivered to: ${participant._id}`
+      //               );
+      //             } catch (err) {
+      //               logger.error(
+      //                 `[Socket:SEND_MESSAGE] Failed to deliver to: ${participant._id}`,
+      //                 err
+      //               );
+      //             }
+      //           }
+      //         });
 
-            await Promise.all(deliveryPromises);
+      //       await Promise.all(deliveryPromises);
 
-            const shouldMarkAsSent =
-              chat.type === "group"
-                ? messageSentToAnyParticipant
-                : messageSentToAnyParticipant && chat.participants.length === 2;
+      //       const shouldMarkAsSent =
+      //         chat.type === "group"
+      //           ? messageSentToAnyParticipant
+      //           : messageSentToAnyParticipant && chat.participants.length === 2;
 
-            if (shouldMarkAsSent) {
-              const finalChat = await Chat.findOneAndUpdate(
-                {
-                  _id: data.chatId,
-                  "messages._id": messageData._id,
-                },
-                {
-                  $set: { "messages.$.isSent": true },
-                },
-                { new: true }
-              );
+      //       if (shouldMarkAsSent) {
+      //         const finalChat = await Chat.findOneAndUpdate(
+      //           {
+      //             _id: data.chatId,
+      //             "messages._id": messageData._id,
+      //           },
+      //           {
+      //             $set: { "messages.$.isSent": true },
+      //           },
+      //           { new: true }
+      //         );
 
-              const senderSocketId = SocketIO.onlineUsers.get(
-                messageWithoutTempId.senderId
-              );
-              if (senderSocketId) {
-                SocketIO.io
-                  .to(senderSocketId)
-                  .emit(events.MESSAGE_STATUS_UPDATE, {
-                    chatId: data.chatId,
-                    messageId: messageData._id.toString(),
-                    tempId: data.tempId,
-                    isSent: true,
-                  });
-              }
+      //         const senderSocketId = SocketIO.onlineUsers.get(
+      //           messageWithoutTempId.senderId
+      //         );
+      //         if (senderSocketId) {
+      //           SocketIO.io
+      //             .to(senderSocketId)
+      //             .emit(events.MESSAGE_STATUS_UPDATE, {
+      //               chatId: data.chatId,
+      //               messageId: messageData._id.toString(),
+      //               tempId: data.tempId,
+      //               isSent: true,
+      //             });
+      //         }
 
-              if (callback) {
-                callback({
-                  data: {
-                    chat: finalChat,
-                    message: { ...decryptedMessageData, isSent: true },
-                    tempId: data.tempId,
-                  },
-                });
-              }
-            } else {
-              if (callback) {
-                callback({
-                  data: {
-                    chat: updatedChat,
-                    message: decryptedMessageData,
-                    tempId: data.tempId,
-                  },
-                });
-              }
-            }
-          } catch (error) {
-            logger.error(`[Socket:SEND_MESSAGE] Error:`, error);
-            if (callback) callback({ error: "Internal server error" });
-          }
-        }
-      );
+      //         if (callback) {
+      //           callback({
+      //             data: {
+      //               chat: finalChat,
+      //               message: { ...decryptedMessageData, isSent: true },
+      //               tempId: data.tempId,
+      //             },
+      //           });
+      //         }
+      //       } else {
+      //         if (callback) {
+      //           callback({
+      //             data: {
+      //               chat: updatedChat,
+      //               message: decryptedMessageData,
+      //               tempId: data.tempId,
+      //             },
+      //           });
+      //         }
+      //       }
+      //     } catch (error) {
+      //       logger.error(`[Socket:SEND_MESSAGE] Error:`, error);
+      //       if (callback) callback({ error: "Internal server error" });
+      //     }
+      //   }
+      // );
 
       socket.on(events.DISCONNECT, () => {
         logger.info(`[Socket] Client disconnected: ${socket.id}`);
@@ -495,13 +495,13 @@ export default class SocketIO {
             }
 
             // Create call log
-            const { callLog } = await CallLogService.createCallLog(
-              data.chatId,
-              data.isVideo ? CallType.VIDEO : CallType.AUDIO,
-              fromUserId,
-              data.toUserIds,
-              data.deviceInfo
-            );
+            // const { callLog } = await CallLogService.createCallLog(
+            //   data.chatId,
+            //   data.isVideo ? CallType.VIDEO : CallType.AUDIO,
+            //   fromUserId,
+            //   data.toUserIds,
+            //   data.deviceInfo
+            // );
 
             // Format participants as objects with id and username
             const participants = [
@@ -523,7 +523,7 @@ export default class SocketIO {
                   participants: participants,
                   isGroup: data.toUserIds.length > 1,
                   groupName: data.groupName,
-                  callLogId: callLog._id.toString(),
+                  // callLogId: callLog._id.toString(),
                 });
               }
             });
@@ -531,7 +531,7 @@ export default class SocketIO {
             callback({
               data: {
                 roomId: room.id,
-                callLogId: callLog._id.toString(),
+                // callLogId: callLog._id.toString(),
               },
             });
           } catch (error) {
@@ -566,12 +566,12 @@ export default class SocketIO {
             }
 
             // Update call log for joined participant
-            await CallLogService.updateParticipantStatus(
-              data.callLogId,
-              data.userId,
-              CallStatus.ACCEPTED,
-              data.deviceInfo
-            );
+            // await CallLogService.updateParticipantStatus(
+            //   data.callLogId,
+            //   data.userId,
+            //   CallStatus.ACCEPTED,
+            //   data.deviceInfo
+            // );
 
             const peer = await this.roomManager.createPeer(
               data.roomId,
@@ -862,11 +862,11 @@ export default class SocketIO {
             const room = this.roomManager.getRoom(data.roomId);
 
             // Update call log for leaving participant
-            await CallLogService.updateParticipantStatus(
-              data.callLogId,
-              data.userId,
-              CallStatus.LEFT
-            );
+            // await CallLogService.updateParticipantStatus(
+            //   data.callLogId,
+            //   data.userId,
+            //   CallStatus.LEFT
+            // );
 
             // Notify other participants before closing the peer
             if (room) {
@@ -888,7 +888,7 @@ export default class SocketIO {
             // Close room and end call log if no peers left
             if (room && room.peers.size === 0) {
               await this.roomManager.closeRoom(data.roomId);
-              await CallLogService.endCall(data.callLogId, data.quality);
+              // await CallLogService.endCall(data.callLogId, data.quality);
             }
           } catch (error) {
             logger.error(`[Socket:LEAVE_ROOM] Error:`, error);
@@ -896,102 +896,102 @@ export default class SocketIO {
         }
       );
 
-      socket.on(
-        events.ACKNOWLEDGE_MESSAGES,
-        async (data: { chatId: string; receiverId: string }) => {
-          try {
-            logger.info(
-              `[Socket:ACKNOWLEDGE_MESSAGES] Processing acknowledgment`,
-              {
-                chatId: data.chatId,
-                receiverId: data.receiverId,
-              }
-            );
+      // socket.on(
+      //   events.ACKNOWLEDGE_MESSAGES,
+      //   async (data: { chatId: string; receiverId: string }) => {
+      //     try {
+      //       logger.info(
+      //         `[Socket:ACKNOWLEDGE_MESSAGES] Processing acknowledgment`,
+      //         {
+      //           chatId: data.chatId,
+      //           receiverId: data.receiverId,
+      //         }
+      //       );
 
-            const chat = await Chat.findOne({
-              _id: data.chatId,
-              "participants._id": data.receiverId,
-            });
+      //       const chat = await Chat.findOne({
+      //         _id: data.chatId,
+      //         "participants._id": data.receiverId,
+      //       });
 
-            if (!chat) {
-              logger.error(
-                `[Socket:ACKNOWLEDGE_MESSAGES] Chat not found or user not participant`
-              );
-              return;
-            }
+      //       if (!chat) {
+      //         logger.error(
+      //           `[Socket:ACKNOWLEDGE_MESSAGES] Chat not found or user not participant`
+      //         );
+      //         return;
+      //       }
 
-            const undeliveredMessages = chat.messages.filter(
-              (msg: any) =>
-                msg.senderId !== data.receiverId &&
-                (!msg.seenBy || !msg.seenBy.includes(data.receiverId))
-            );
+      //       const undeliveredMessages = chat.messages.filter(
+      //         (msg: any) =>
+      //           msg.senderId !== data.receiverId &&
+      //           (!msg.seenBy || !msg.seenBy.includes(data.receiverId))
+      //       );
 
-            if (undeliveredMessages.length === 0) {
-              logger.info(
-                `[Socket:ACKNOWLEDGE_MESSAGES] No undelivered messages found`
-              );
-              return;
-            }
+      //       if (undeliveredMessages.length === 0) {
+      //         logger.info(
+      //           `[Socket:ACKNOWLEDGE_MESSAGES] No undelivered messages found`
+      //         );
+      //         return;
+      //       }
 
-            await Chat.findOneAndUpdate(
-              { _id: data.chatId },
-              {
-                $set: {
-                  "messages.$[elem].isSent": true,
-                  [`unreadCount.${data.receiverId}`]: 0,
-                },
-                $addToSet: {
-                  "messages.$[elem].seenBy": data.receiverId,
-                },
-              },
-              {
-                arrayFilters: [
-                  {
-                    "elem.senderId": { $ne: data.receiverId },
-                    "elem.seenBy": { $ne: data.receiverId },
-                  },
-                ],
-                new: true,
-              }
-            );
+      //       await Chat.findOneAndUpdate(
+      //         { _id: data.chatId },
+      //         {
+      //           $set: {
+      //             "messages.$[elem].isSent": true,
+      //             [`unreadCount.${data.receiverId}`]: 0,
+      //           },
+      //           $addToSet: {
+      //             "messages.$[elem].seenBy": data.receiverId,
+      //           },
+      //         },
+      //         {
+      //           arrayFilters: [
+      //             {
+      //               "elem.senderId": { $ne: data.receiverId },
+      //               "elem.seenBy": { $ne: data.receiverId },
+      //             },
+      //           ],
+      //           new: true,
+      //         }
+      //       );
 
-            const senderIds = new Set(
-              undeliveredMessages.map((msg: any) => msg.senderId)
-            );
+      //       const senderIds = new Set(
+      //         undeliveredMessages.map((msg: any) => msg.senderId)
+      //       );
 
-            senderIds.forEach((senderId) => {
-              const senderSocketId = SocketIO.onlineUsers.get(
-                senderId.toString()
-              );
+      //       senderIds.forEach((senderId) => {
+      //         const senderSocketId = SocketIO.onlineUsers.get(
+      //           senderId.toString()
+      //         );
 
-              if (senderSocketId) {
-                undeliveredMessages.forEach((msg: any) => {
-                  if (msg.senderId.toString() === senderId.toString()) {
-                    SocketIO.io
-                      .to(senderSocketId)
-                      .emit(events.MESSAGE_STATUS_UPDATE, {
-                        chatId: data.chatId,
-                        messageId: msg._id.toString(),
-                        isSent: true,
-                        seenBy: [...(msg.seenBy || []), data.receiverId],
-                      });
-                  }
-                });
-              }
-            });
+      //         if (senderSocketId) {
+      //           undeliveredMessages.forEach((msg: any) => {
+      //             if (msg.senderId.toString() === senderId.toString()) {
+      //               SocketIO.io
+      //                 .to(senderSocketId)
+      //                 .emit(events.MESSAGE_STATUS_UPDATE, {
+      //                   chatId: data.chatId,
+      //                   messageId: msg._id.toString(),
+      //                   isSent: true,
+      //                   seenBy: [...(msg.seenBy || []), data.receiverId],
+      //                 });
+      //             }
+      //           });
+      //         }
+      //       });
 
-            logger.info(
-              `[Socket:ACKNOWLEDGE_MESSAGES] Successfully updated message statuses`,
-              {
-                chatId: data.chatId,
-                updatedCount: undeliveredMessages.length,
-              }
-            );
-          } catch (error) {
-            logger.error(`[Socket:ACKNOWLEDGE_MESSAGES] Error:`, error);
-          }
-        }
-      );
+      //       logger.info(
+      //         `[Socket:ACKNOWLEDGE_MESSAGES] Successfully updated message statuses`,
+      //         {
+      //           chatId: data.chatId,
+      //           updatedCount: undeliveredMessages.length,
+      //         }
+      //       );
+      //     } catch (error) {
+      //       logger.error(`[Socket:ACKNOWLEDGE_MESSAGES] Error:`, error);
+      //     }
+      //   }
+      // );
 
       socket.on(
         events.GET_PRODUCER,
@@ -1038,11 +1038,11 @@ export default class SocketIO {
         events.REJECT_CALL,
         async (data: { callLogId: string; userId: string }) => {
           try {
-            await CallLogService.updateParticipantStatus(
-              data.callLogId,
-              data.userId,
-              CallStatus.REJECTED
-            );
+            // await CallLogService.updateParticipantStatus(
+            //   data.callLogId,
+            //   data.userId,
+            //   CallStatus.REJECTED
+            // );
           } catch (error) {
             logger.error(`[Socket:REJECT_CALL] Error:`, error);
           }
@@ -1054,11 +1054,11 @@ export default class SocketIO {
         events.MISSED_CALL,
         async (data: { callLogId: string; userId: string }) => {
           try {
-            await CallLogService.updateParticipantStatus(
-              data.callLogId,
-              data.userId,
-              CallStatus.MISSED
-            );
+            // await CallLogService.updateParticipantStatus(
+            //   data.callLogId,
+            //   data.userId,
+            //   CallStatus.MISSED
+            // );
           } catch (error) {
             logger.error(`[Socket:MISSED_CALL] Error:`, error);
           }
@@ -1071,231 +1071,231 @@ export default class SocketIO {
         async (data: { callLogId: string; userId: string }) => {
           try {
             // Update the participant status to BUSY
-            const callLog = await CallLogService.updateParticipantStatus(
-              data.callLogId,
-              data.userId,
-              CallStatus.BUSY
-            );
+            // const callLog = await CallLogService.updateParticipantStatus(
+            //   data.callLogId,
+            //   data.userId,
+            //   CallStatus.BUSY
+            // );
 
             // Find the caller to notify them that the recipient is busy
-            if (callLog) {
-              // Find the initiator participant
-              const initiator = callLog.participants.find(
-                (p) => p.role === "initiator"
-              );
-              if (initiator) {
-                const initiatorSocketId = SocketIO.onlineUsers.get(
-                  initiator.userId.toString()
-                );
-                if (initiatorSocketId) {
-                  // Notify the caller that the recipient is busy
-                  SocketIO.io
-                    .to(initiatorSocketId)
-                    .emit(events.CALL_STATUS_UPDATE, {
-                      callLogId: data.callLogId,
-                      userId: data.userId,
-                      status: CallStatus.BUSY,
-                    });
-                }
-              }
-            }
+            // if (callLog) {
+            //   // Find the initiator participant
+            //   const initiator = callLog.participants.find(
+            //     (p: any) => p.role === "initiator"
+            //   );
+            //   if (initiator) {
+            //     const initiatorSocketId = SocketIO.onlineUsers.get(
+            //       initiator.userId.toString()
+            //     );
+            //     if (initiatorSocketId) {
+            //       // Notify the caller that the recipient is busy
+            //       SocketIO.io
+            //         .to(initiatorSocketId)
+            //         .emit(events.CALL_STATUS_UPDATE, {
+            //           callLogId: data.callLogId,
+            //           userId: data.userId,
+            //           status: CallStatus.BUSY,
+            //         });
+            //     }
+            //   }
+            // }
           } catch (error) {
             logger.error(`[Socket:BUSY_CALL] Error:`, error);
           }
         }
       );
 
-      socket.on(
-        events.SEND_REACTION,
-        async (
-          data: {
-            messageId: string;
-            emoji: string;
-            userId: string;
-            username: string;
-          },
-          callback: (response: { error?: string; data?: any }) => void
-        ) => {
-          try {
-            // Find the chat containing the message
-            const chat = await Chat.findOne({
-              "messages._id": data.messageId,
-              "participants._id": data.userId,
-            });
+      // socket.on(
+      //   events.SEND_REACTION,
+      //   async (
+      //     data: {
+      //       messageId: string;
+      //       emoji: string;
+      //       userId: string;
+      //       username: string;
+      //     },
+      //     callback: (response: { error?: string; data?: any }) => void
+      //   ) => {
+      //     try {
+      //       // Find the chat containing the message
+      //       const chat = await Chat.findOne({
+      //         "messages._id": data.messageId,
+      //         "participants._id": data.userId,
+      //       });
 
-            if (!chat) {
-              callback({ error: "Chat not found or unauthorized" });
-              return;
-            }
+      //       if (!chat) {
+      //         callback({ error: "Chat not found or unauthorized" });
+      //         return;
+      //       }
 
-            // Add the reaction
-            const updatedChat = await Chat.findOneAndUpdate(
-              {
-                _id: chat._id,
-                "messages._id": data.messageId,
-              },
-              {
-                $pull: {
-                  "messages.$.reactions": {
-                    userId: new Types.ObjectId(data.userId),
-                  },
-                },
-              },
-              { new: true }
-            );
+      //       // Add the reaction
+      //       const updatedChat = await Chat.findOneAndUpdate(
+      //         {
+      //           _id: chat._id,
+      //           "messages._id": data.messageId,
+      //         },
+      //         {
+      //           $pull: {
+      //             "messages.$.reactions": {
+      //               userId: new Types.ObjectId(data.userId),
+      //             },
+      //           },
+      //         },
+      //         { new: true }
+      //       );
 
-            if (!updatedChat) {
-              callback({ error: "Failed to update reaction" });
-              return;
-            }
+      //       if (!updatedChat) {
+      //         callback({ error: "Failed to update reaction" });
+      //         return;
+      //       }
 
-            // Now add the new reaction
-            const finalChat = await Chat.findOneAndUpdate(
-              {
-                _id: chat._id,
-                "messages._id": data.messageId,
-              },
-              {
-                $push: {
-                  "messages.$.reactions": {
-                    emoji: data.emoji,
-                    userId: new Types.ObjectId(data.userId),
-                    username: data.username,
-                    timestamp: new Date(),
-                  },
-                },
-              },
-              { new: true }
-            );
+      //       // Now add the new reaction
+      //       const finalChat = await Chat.findOneAndUpdate(
+      //         {
+      //           _id: chat._id,
+      //           "messages._id": data.messageId,
+      //         },
+      //         {
+      //           $push: {
+      //             "messages.$.reactions": {
+      //               emoji: data.emoji,
+      //               userId: new Types.ObjectId(data.userId),
+      //               username: data.username,
+      //               timestamp: new Date(),
+      //             },
+      //           },
+      //         },
+      //         { new: true }
+      //       );
 
-            if (!finalChat) {
-              callback({ error: "Failed to add reaction" });
-              return;
-            }
+      //       if (!finalChat) {
+      //         callback({ error: "Failed to add reaction" });
+      //         return;
+      //       }
 
-            // Find the updated message
-            const message = finalChat.messages.find(
-              (m) => m._id.toString() === data.messageId
-            );
+      //       // Find the updated message
+      //       const message = finalChat.messages.find(
+      //         (m) => m._id.toString() === data.messageId
+      //       );
 
-            if (!message) {
-              callback({ error: "Message not found" });
-              return;
-            }
+      //       if (!message) {
+      //         callback({ error: "Message not found" });
+      //         return;
+      //       }
 
-            // Create a decrypted copy of the message
-            const decryptedMessage = JSON.parse(JSON.stringify(message));
-            if (decryptedMessage.text) {
-              decryptedMessage.text = MessageEncryptionService.decryptMessage(
-                decryptedMessage.text,
-                chat.encryptionKey
-              );
-            }
+      //       // Create a decrypted copy of the message
+      //       const decryptedMessage = JSON.parse(JSON.stringify(message));
+      //       if (decryptedMessage.text) {
+      //         decryptedMessage.text = MessageEncryptionService.decryptMessage(
+      //           decryptedMessage.text,
+      //           chat.encryptionKey
+      //         );
+      //       }
 
-            // Notify other participants
-            chat.participants.forEach((participant) => {
-              if (participant._id.toString() !== data.userId) {
-                const recipientSocketId = SocketIO.onlineUsers.get(
-                  participant._id.toString()
-                );
-                if (recipientSocketId) {
-                  socket.to(recipientSocketId).emit(events.REACTION_RECEIVED, {
-                    chatId: chat._id,
-                    messageId: data.messageId,
-                    reaction: {
-                      emoji: data.emoji,
-                      userId: data.userId,
-                      username: data.username,
-                      timestamp: new Date(),
-                    },
-                  });
-                }
-              }
-            });
+      //       // Notify other participants
+      //       // chat.participants.forEach((participant) => {
+      //       //   if (participant._id.toString() !== data.userId) {
+      //       //     const recipientSocketId = SocketIO.onlineUsers.get(
+      //       //       participant._id.toString()
+      //       //     );
+      //       //     if (recipientSocketId) {
+      //       //       socket.to(recipientSocketId).emit(events.REACTION_RECEIVED, {
+      //       //         chatId: chat._id,
+      //       //         messageId: data.messageId,
+      //       //         reaction: {
+      //       //           emoji: data.emoji,
+      //       //           userId: data.userId,
+      //       //           username: data.username,
+      //       //           timestamp: new Date(),
+      //       //         },
+      //       //       });
+      //       //     }
+      //       //   }
+      //       // });
 
-            callback({ data: { message: decryptedMessage } });
-          } catch (error) {
-            logger.error("[Socket:SEND_REACTION] Error:", error);
-            callback({ error: "Internal server error" });
-          }
-        }
-      );
+      //       callback({ data: { message: decryptedMessage } });
+      //     } catch (error) {
+      //       logger.error("[Socket:SEND_REACTION] Error:", error);
+      //       callback({ error: "Internal server error" });
+      //     }
+      //   }
+      // );
 
-      socket.on(
-        events.REMOVE_REACTION,
-        async (
-          data: {
-            messageId: string;
-            emoji: string;
-            userId: string;
-          },
-          callback: (response: { error?: string; data?: any }) => void
-        ) => {
-          try {
-            // Find the chat containing the message
-            const chat = await Chat.findOne({
-              "messages._id": data.messageId,
-              "participants._id": data.userId,
-            });
+      // socket.on(
+      //   events.REMOVE_REACTION,
+      //   async (
+      //     data: {
+      //       messageId: string;
+      //       emoji: string;
+      //       userId: string;
+      //     },
+      //     callback: (response: { error?: string; data?: any }) => void
+      //   ) => {
+      //     try {
+      //       // Find the chat containing the message
+      //       const chat = await Chat.findOne({
+      //         "messages._id": data.messageId,
+      //         "participants._id": data.userId,
+      //       });
 
-            if (!chat) {
-              callback({ error: "Chat not found or unauthorized" });
-              return;
-            }
+      //       if (!chat) {
+      //         callback({ error: "Chat not found or unauthorized" });
+      //         return;
+      //       }
 
-            // Remove the reaction
-            const updatedChat = await Chat.findOneAndUpdate(
-              {
-                _id: chat._id,
-                "messages._id": data.messageId,
-              },
-              {
-                $pull: {
-                  "messages.$.reactions": {
-                    emoji: data.emoji,
-                    userId: new Types.ObjectId(data.userId),
-                  },
-                },
-              },
-              { new: true }
-            );
+      //       // Remove the reaction
+      //       const updatedChat = await Chat.findOneAndUpdate(
+      //         {
+      //           _id: chat._id,
+      //           "messages._id": data.messageId,
+      //         },
+      //         {
+      //           $pull: {
+      //             "messages.$.reactions": {
+      //               emoji: data.emoji,
+      //               userId: new Types.ObjectId(data.userId),
+      //             },
+      //           },
+      //         },
+      //         { new: true }
+      //       );
 
-            if (!updatedChat) {
-              callback({ error: "Failed to remove reaction" });
-              return;
-            }
+      //       if (!updatedChat) {
+      //         callback({ error: "Failed to remove reaction" });
+      //         return;
+      //       }
 
-            // Find the updated message
-            const message = updatedChat.messages.find(
-              (m) => m._id.toString() === data.messageId
-            );
+      //       // Find the updated message
+      //       const message = updatedChat.messages.find(
+      //         (m: any) => m._id.toString() === data.messageId
+      //       );
 
-            // Notify other participants
-            chat.participants.forEach((participant) => {
-              if (participant._id.toString() !== data.userId) {
-                const recipientSocketId = SocketIO.onlineUsers.get(
-                  participant._id.toString()
-                );
-                if (recipientSocketId) {
-                  socket.to(recipientSocketId).emit(events.REACTION_REMOVED, {
-                    chatId: chat._id,
-                    messageId: data.messageId,
-                    reaction: {
-                      emoji: data.emoji,
-                      userId: data.userId,
-                    },
-                  });
-                }
-              }
-            });
+      //       // Notify other participants
+      //       // chat.participants.forEach((participant) => {
+      //       //   if (participant._id.toString() !== data.userId) {
+      //       //     const recipientSocketId = SocketIO.onlineUsers.get(
+      //       //       participant._id.toString()
+      //       //     );
+      //       //     if (recipientSocketId) {
+      //       //       socket.to(recipientSocketId).emit(events.REACTION_REMOVED, {
+      //       //         chatId: chat._id,
+      //       //         messageId: data.messageId,
+      //       //         reaction: {
+      //       //           emoji: data.emoji,
+      //       //           userId: data.userId,
+      //       //         },
+      //       //       });
+      //       //     }
+      //       //   }
+      //       // });
 
-            callback({ data: { message } });
-          } catch (error) {
-            logger.error("[Socket:REMOVE_REACTION] Error:", error);
-            callback({ error: "Internal server error" });
-          }
-        }
-      );
+      //       callback({ data: { message } });
+      //     } catch (error) {
+      //       logger.error("[Socket:REMOVE_REACTION] Error:", error);
+      //       callback({ error: "Internal server error" });
+      //     }
+      //   }
+      // );
     });
   }
 }

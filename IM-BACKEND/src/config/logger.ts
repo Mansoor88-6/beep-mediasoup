@@ -9,8 +9,8 @@ import {
   FilterRequest,
 } from "express-winston";
 import { Handler, ErrorRequestHandler } from "express";
-import { AuthService } from "@services/auth";
-import { JwtPayload } from "jsonwebtoken";
+// import { AuthService } from "@services/auth";
+// import { JwtPayload } from "jsonwebtoken";
 import moment from "moment";
 const logDir = "logs";
 
@@ -123,48 +123,48 @@ function customRequestFilter(req: FilterRequest, propName: any) {
   return rest;
 }
 
-/*
-This will log each and every request
-according the fomrat we have defined 
-and in json.
-*/
-export const requestLogger: Handler = expressLogger({
-  winstonInstance: requestLoggerInstance,
-  statusLevels: true,
-  requestFilter: customRequestFilter,
-  dynamicMeta: (req, res, err) => {
-    httpRequest = {} as typeof httpRequest;
-    meta = {} as typeof meta;
-    if (req) {
-      const authService = new AuthService();
-      const token = req.cookies.token;
+// /*
+// This will log each and every request
+// according the fomrat we have defined 
+// and in json.
+// */
+// export const requestLogger: Handler = expressLogger({
+//   winstonInstance: requestLoggerInstance,
+//   statusLevels: true,
+//   requestFilter: customRequestFilter,
+//   dynamicMeta: (req, res, err) => {
+//     httpRequest = {} as typeof httpRequest;
+//     meta = {} as typeof meta;
+//     if (req) {
+//       const authService = new AuthService();
+//       const token = req.cookies.token;
 
-      if (token) {
-        const decoded = authService.verifyToken(token);
-        if (decoded) {
-          req.user = decoded.user as typeof req.user;
-        }
-      }
+//       if (token) {
+//         const decoded = authService.verifyToken(token);
+//         if (decoded) {
+//           req.user = decoded.user as typeof req.user;
+//         }
+//       }
 
-      meta.httpRequest = httpRequest;
-      httpRequest.requestMethod = req.method;
-      httpRequest.requestUrl = `${req.protocol}://${req.get("host")}${
-        req.originalUrl
-      }`;
-      httpRequest.protocol = `HTTP/${req.httpVersion}`;
-      httpRequest.requestId = `${req?.user?.id}`;
-      httpRequest.remoteIp = req.ip
-        ? (req.ip || "").indexOf(":") >= 0
-          ? req.ip.substring(req.ip.lastIndexOf(":") + 1)
-          : req.ip
-        : "";
-      httpRequest.requestSize = req.socket.bytesRead;
-      httpRequest.referrer = req.get("Referrer");
-      meta.requestId = `${req?.user?.id}`;
-    }
-    return meta;
-  },
-});
+//       meta.httpRequest = httpRequest;
+//       httpRequest.requestMethod = req.method;
+//       httpRequest.requestUrl = `${req.protocol}://${req.get("host")}${
+//         req.originalUrl
+//       }`;
+//       httpRequest.protocol = `HTTP/${req.httpVersion}`;
+//       httpRequest.requestId = `${req?.user?.id}`;
+//       httpRequest.remoteIp = req.ip
+//         ? (req.ip || "").indexOf(":") >= 0
+//           ? req.ip.substring(req.ip.lastIndexOf(":") + 1)
+//           : req.ip
+//         : "";
+//       httpRequest.requestSize = req.socket.bytesRead;
+//       httpRequest.referrer = req.get("Referrer");
+//       meta.requestId = `${req?.user?.id}`;
+//     }
+//     return meta;
+//   },
+// });
 
 /*
 This will log each and every request

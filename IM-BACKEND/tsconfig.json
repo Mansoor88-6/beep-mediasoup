@@ -49,17 +49,11 @@
     "moduleResolution": "node" /* Specify module resolution strategy: 'node' (Node.js) or 'classic' (TypeScript pre-1.6). */,
     "baseUrl": "./src" /* Base directory to resolve non-absolute module names. */,
     "paths": {
-      // "*": [ "../node_modules/*", "index.d.ts" ],
       "@config/*": ["config/*"],
       "@services/*": ["services/*"],
-      "@models/*": ["models/*"],
-      "@customTypes/*": ["types/*"],
-      "@customErrors/*": ["errors/*"],
-      "@loaders/*": ["loaders/*"],
-      "@api/*": ["api/*"],
       "@socket/*": ["socket/*"],
-      "@assets": ["../assets/*"],
-      "@utils/*": ["utils/*"]
+      "@utils/*": ["utils/*"],
+      "@customTypes/*": ["types/*"]
     } /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */,
     // "rootDirs": [],                              /* List of root folders whose combined content represents the structure of the project at runtime. */
     // "typeRoots": [],                             /* List of folders to include type definitions from. */
@@ -85,5 +79,5 @@
     "resolveJsonModule": true /* Include modules imported with '.json' extension */
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "frontend", "frontend", "frontend/*"]
+  "exclude": ["node_modules", "frontend", "frontend/*"]
 }

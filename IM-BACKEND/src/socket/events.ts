@@ -5,16 +5,7 @@ export const events = {
   ERROR: "error",
   ADD_USER: "add_user",
   ONLINE_USERS_UPDATE: "online_users_update",
-  SEND_MESSAGE: "send_message",
-  RECEIVE_MESSAGE: "receive_message",
-  MESSAGE_STATUS_UPDATE: "message_status_update",
-  ACKNOWLEDGE_MESSAGES: "acknowledge_messages",
   NEW_CHAT: "new_chat",
-
-  // Typing Events
-  USER_TYPING: "user_typing",
-  USER_STOPPED_TYPING: "user_stopped_typing",
-  TYPING_STATUS_UPDATE: "typing_status_update",
 
   // Group Events
   CREATE_GROUP: "create_group",
@@ -48,9 +39,4 @@ export const events = {
   CALL_STATUS_UPDATE: "call_status_update",
   CALL_QUALITY_UPDATE: "call_quality_update",
 
-  // Reaction Events
-  SEND_REACTION: "send_reaction",
-  REMOVE_REACTION: "remove_reaction",
-  REACTION_RECEIVED: "reaction_received",
-  REACTION_REMOVED: "reaction_removed",
 } as const;

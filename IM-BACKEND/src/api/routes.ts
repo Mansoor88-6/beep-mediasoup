@@ -2,7 +2,7 @@
 // import { registerErrorHandler, registerAntiCsrfProtection } from './middleware/globals';
 
 import { Router } from "express";
-import { registerApiRoutes } from "./components";
+// import { registerApiRoutes } from "./components";
 import { registerErrorHandler } from "./middleware/globals";
 
 /**
@@ -13,6 +13,6 @@ import { registerErrorHandler } from "./middleware/globals";
  */
 export function initRestRoutes(router: Router): void {
   const prefix = "/api";
-  registerApiRoutes(router, prefix);
+  // registerApiRoutes(router, prefix);
   registerErrorHandler(router);
 }
