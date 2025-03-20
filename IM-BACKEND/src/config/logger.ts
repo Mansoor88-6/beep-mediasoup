@@ -8,7 +8,7 @@ import {
   errorLogger,
   FilterRequest,
 } from "express-winston";
-import { Handler, ErrorRequestHandler } from "express";
+import { ErrorRequestHandler } from "express";
 // import { AuthService } from "@services/auth";
 // import { JwtPayload } from "jsonwebtoken";
 import moment from "moment";

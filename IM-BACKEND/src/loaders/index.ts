@@ -5,7 +5,6 @@ import ExpressLoader from './express';
 // import mongooseLoader from './mongoose';
 import { logger } from '@config/logger';
 import SocketServer from '@socket/socketServer'
-import Redis from './redis';
 
 
 export default async (app:express.Application, httpServer: Server): Promise<ExpressLoader> => {
