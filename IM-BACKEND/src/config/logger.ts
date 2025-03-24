@@ -14,6 +14,34 @@ import { ErrorRequestHandler } from "express";
 import moment from "moment";
 const logDir = "logs";
 
+// Colors for gradient animation
+const colors = [
+  "\x1b[1;31m", // bold red
+  "\x1b[1;33m", // bold yellow
+  "\x1b[1;32m", // bold green
+  "\x1b[1;36m", // bold cyan
+  "\x1b[1;34m", // bold blue
+  "\x1b[1;35m", // bold magenta
+];
+const resetColor = "\x1b[0m";
+
+// timestamp color rainbow format
+const rainBowFormat = (format: any) => {
+  return format.printf((info: any) => {
+    // Get current real-time timestamp instead of using info.timestamp
+    const currentTime = moment().format("MMMM D YYYY, h:mm:ss A");
+    const text = `${currentTime} ${info.level}`;
+    let colorText = "";
+    // apply rainbow color to the character
+    for (let i = 0; i < text.length; i++) {
+      const colorIndex = Math.floor((i / text.length) * colors.length);
+      colorText += `${colors[colorIndex]}${text.charAt(i)}`;
+    }
+    // Add reset only at the end of the gradient part
+    return colorText + resetColor + " >>> " + info.message;
+  });
+};
+
 // Create the log directory if it does not exist
 if (!existsSync(logDir)) {
   mkdirSync(logDir);
@@ -44,11 +72,12 @@ const loggingOptions = {
   level: "info",
   format: format.combine(
     format.errors({ stack: true }),
-    format.colorize(),
     format.timestamp({
       format: () => moment().format("MMMM D YYYY, h:mm:ss A"),
     }),
-    format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`)
+    format.printf(
+      (info) => `${info.timestamp} ${info.level.toUpperCase()}: ${info.message}`
+    )
   ),
 };
 
@@ -125,7 +154,7 @@ function customRequestFilter(req: FilterRequest, propName: any) {
 
 // /*
 // This will log each and every request
-// according the fomrat we have defined 
+// according the fomrat we have defined
 // and in json.
 // */
 // export const requestLogger: Handler = expressLogger({
@@ -177,12 +206,7 @@ export const requestErrorLogger: ErrorRequestHandler = errorLogger({
 
 logger.add(
   new transports.Console({
-    format: format.combine(
-      format.colorize(),
-      format.printf(
-        (info) => `${info.timestamp} ${info.level}: ${info.message}`
-      )
-    ),
+    format: format.combine(rainBowFormat(format)),
     level: globals.ENV !== Environment.Production ? "debug" : "info",
   })
 );

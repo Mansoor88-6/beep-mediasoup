@@ -43,8 +43,8 @@
   },
   "_moduleAliases": {
     "@config": "dist/config",
-    "@services": "dist/services",
     "@socket": "dist/socket",
-    "@utils": "dist/utils"
+    "@loaders": "dist/loaders",
+    "@customTypes": "dist/types"
   }
 }

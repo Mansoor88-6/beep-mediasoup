@@ -11,7 +11,7 @@ import {
   RtpParameters,
   Transport,
 } from "mediasoup/node/lib/types";
-  
+
 interface WebRtcTransport extends Transport {
   iceParameters: IceParameters;
   iceCandidates: IceCandidate[];
@@ -117,6 +117,8 @@ export default class SocketIO {
           callback: (response: { error?: string; data?: any }) => void
         ) => {
           try {
+            console.log("callback", callback);
+            console.log("data", data);
             const room = await this.roomManager.createRoom(data.roomId);
 
             const fromUserId = Array.from(SocketIO.onlineUsers.entries()).find(
@@ -161,6 +163,8 @@ export default class SocketIO {
                 });
               }
             });
+
+            console.log("room", room);
 
             callback({
               data: {
@@ -614,7 +618,6 @@ export default class SocketIO {
             //   data.userId,
             //   CallStatus.BUSY
             // );
-
             // Find the caller to notify them that the recipient is busy
             // if (callLog) {
             //   // Find the initiator participant
@@ -642,8 +645,6 @@ export default class SocketIO {
           }
         }
       );
-
-
     });
   }
 }

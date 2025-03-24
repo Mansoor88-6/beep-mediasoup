@@ -1,21 +1,9 @@
-// Register module aliases first
-import * as path from "path";
-import moduleAlias from "module-alias";
-
-// Register aliases based on the directory structure
-const baseDir = path.resolve(__dirname);
-moduleAlias.addAliases({
-  "@config": path.join(baseDir, "config"),
-  "@services": path.join(baseDir, "services"),
-  "@socket": path.join(baseDir, "socket"),
-  "@utils": path.join(baseDir, "utils"),
-  "@customTypes": path.join(baseDir, "types"),
-});
 
 // Now import everything else
+import "module-alias/register";
 import http from "http";
 import express from "express";
-import Loaders from "./loaders";
+import Loaders from "@loaders/index";
 import { globals } from "@config/globals";
 
 const DEFAULT_PORT = 3300;
