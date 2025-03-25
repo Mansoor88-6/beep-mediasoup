@@ -12,6 +12,6 @@ export default async (
   const expressInstance = new ExpressLoader(app, httpServer);
   logger.info("🚀 Express Initialized!");
   await socketServer.connect();
-  logger.info("🚀 Socket Initialized!");
+  // logger.info("🚀 Socket Initialized!");
   return expressInstance;
 };

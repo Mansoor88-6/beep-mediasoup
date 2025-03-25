@@ -8,7 +8,8 @@
     "prestart": "npm run build",
     "lint": "eslint .",
     "lint-and-fix": "eslint . --ext .ts --fix",
-    "dev": "cross-env DEPLOYMENT_ENV=local NODE_ENV=development nodemon"
+    "dev": "cross-env DEPLOYMENT_ENV=local NODE_ENV=development nodemon",
+    "server": "cross-env DEPLOYMENT_ENV=production NODE_ENV=production nodemon"
   },
   "author": "Mansoor Ahmad Khan",
   "description": "WebRTC SFU calling server using mediasoup",

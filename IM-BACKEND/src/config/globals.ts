@@ -84,7 +84,7 @@ globals = {
   ENV: process.env.NODE_ENV,
   SERVER_PORT: Number(process.env.SERVER_PORT),
   DEFAULT_TIMEZONE: process.env.DEFAULT_TIMEZONE,
-  CORS: (process.env.CORS as string).split(","),
+  CORS: (process.env.CORS as string)?.split(","),
   cookieOptions: {
     httpOnly: false,
     secure:

@@ -10,12 +10,15 @@ import {
   RtpCapabilities,
   RtpParameters,
   Transport,
+  SctpParameters,
 } from "mediasoup/node/lib/types";
+import { globals } from "@config/globals";
 
 interface WebRtcTransport extends Transport {
   iceParameters: IceParameters;
   iceCandidates: IceCandidate[];
   dtlsParameters: DtlsParameters;
+  sctpParameters: SctpParameters;
 }
 
 export default class SocketIO {
@@ -193,6 +196,7 @@ export default class SocketIO {
               os?: string;
               device?: string;
             };
+            sctpCapabilities?: any;
           },
           callback: (response: { error?: string; data?: any }) => void
         ) => {
@@ -233,10 +237,12 @@ export default class SocketIO {
             });
 
             // Create send transport
+            // Create send transport
             const sendTransport = await this.roomManager.createWebRtcTransport(
               data.roomId,
               data.userId,
-              "send"
+              "send",
+              data.sctpCapabilities
             );
 
             // Create receive transport
@@ -244,27 +250,32 @@ export default class SocketIO {
               await this.roomManager.createWebRtcTransport(
                 data.roomId,
                 data.userId,
-                "receive"
+                "receive",
+                data.sctpCapabilities
               );
 
-            const transportData = {
-              send: {
-                id: sendTransport.id,
-                iceParameters: (sendTransport as WebRtcTransport).iceParameters,
-                iceCandidates: (sendTransport as WebRtcTransport).iceCandidates,
-                dtlsParameters: (sendTransport as WebRtcTransport)
-                  .dtlsParameters,
-              },
-              receive: {
-                id: receiveTransport.id,
-                iceParameters: (receiveTransport as WebRtcTransport)
-                  .iceParameters,
-                iceCandidates: (receiveTransport as WebRtcTransport)
-                  .iceCandidates,
-                dtlsParameters: (receiveTransport as WebRtcTransport)
-                  .dtlsParameters,
-              },
-            };
+              const transportData = {
+                send: {
+                  id: sendTransport.id,
+                  iceParameters: (sendTransport as WebRtcTransport).iceParameters,
+                  iceCandidates: (sendTransport as WebRtcTransport).iceCandidates,
+                  dtlsParameters: (sendTransport as WebRtcTransport)
+                    .dtlsParameters,
+                  sctpParameters: (sendTransport as WebRtcTransport)
+                    .sctpParameters,
+                },
+                receive: {
+                  id: receiveTransport.id,
+                  iceParameters: (receiveTransport as WebRtcTransport)
+                    .iceParameters,
+                  iceCandidates: (receiveTransport as WebRtcTransport)
+                    .iceCandidates,
+                  dtlsParameters: (receiveTransport as WebRtcTransport)
+                    .dtlsParameters,
+                  sctpParameters: (receiveTransport as WebRtcTransport)
+                    .sctpParameters,
+                },
+              };
 
             callback({
               data: {

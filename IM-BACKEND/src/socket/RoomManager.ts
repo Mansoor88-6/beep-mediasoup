@@ -120,7 +120,8 @@ export class RoomManager {
   public async createWebRtcTransport(
     roomId: string,
     peerId: string,
-    direction: "send" | "receive"
+    direction: "send" | "receive",
+    sctpCapabilities?: any
   ): Promise<Transport> {
     const room = this.rooms.get(roomId);
     if (!room) {
@@ -132,13 +133,25 @@ export class RoomManager {
       throw new Error(`Peer ${peerId} not found`);
     }
 
-    const transport = await room.router.createWebRtcTransport({
-      ...config.webRtcTransport,
-      enableUdp: true,
-      enableTcp: true,
-      preferUdp: true,
-      appData: { type: direction },
-    });
+    // const transport = await room.router.createWebRtcTransport({
+    //   ...config.webRtcTransport,
+    //   enableUdp: true,
+    //   enableTcp: true,
+    //   preferUdp: true,
+    //   appData: { type: direction },
+    // });
+
+    // Transport options with SCTP support for Flutter clients
+    const transportOptions = {
+          ...config.webRtcTransport,
+          appData: {
+            type: direction,
+            sctpCapabilities,
+          },
+        };
+    
+    // Create the transport
+    const transport = await room.router.createWebRtcTransport(transportOptions);
 
     peer.transports.set(transport.id, transport);
 
