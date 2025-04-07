@@ -52,17 +52,37 @@ export const config = {
   },
 
   // WebRtcTransport Settings
+  // webRtcTransport: {
+  //   listenIps: [
+  //     {
+  //       ip: process.env.MEDIASOUP_LISTEN_IP || "0.0.0.0",
+  //       announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP || getLocalIp(),
+  //     },
+  //   ],
+  //   initialAvailableOutgoingBitrate: 1000000,
+  //   minimumAvailableOutgoingBitrate: 600000,
+  //   maxSctpMessageSize: 262144,
+  //   maxIncomingBitrate: 1500000,
+  // },
   webRtcTransport: {
     listenIps: [
       {
-        ip: process.env.MEDIASOUP_LISTEN_IP || "0.0.0.0",
-        announcedIp: process.env.MEDIASOUP_ANNOUNCED_IP || getLocalIp(),
+        ip: "0.0.0.0",
+        announcedIp: "104.251.212.58",
       },
     ],
-    initialAvailableOutgoingBitrate: 1000000,
-    minimumAvailableOutgoingBitrate: 600000,
+    initialAvailableOutgoingBitrate: 3000000,
+    minimumAvailableOutgoingBitrate: 300000,
     maxSctpMessageSize: 262144,
-    maxIncomingBitrate: 1500000,
+    maxIncomingBitrate: 2500000,
+    // Adding required options for Flutter compatibility
+    enableUdp: true,
+    enableTcp: false,
+    preferUdp: true,
+    enableTransportCc: true,
+    // SCTP parameters for data channels (needed for Flutter client)
+    enableSctp: true,
+    numSctpStreams: { OS: 1024, MIS: 1024 },
   },
 };
 

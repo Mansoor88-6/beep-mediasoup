@@ -162,6 +162,7 @@ export default class SocketIO {
                   participants: participants,
                   isGroup: data.toUserIds.length > 1,
                   groupName: data.groupName,
+                  routerRtpCapabilities: room.router.rtpCapabilities,
                   // callLogId: callLog._id.toString(),
                 });
               }
@@ -398,6 +399,7 @@ export default class SocketIO {
           callback: (response: { error?: string; data?: any }) => void
         ) => {
           try {
+            console.log("[CONSUME CALLED]DATA", JSON.stringify(data));
             const room = this.roomManager.getRoom(data.roomId);
             if (!room) {
               callback({ error: "[Socket:CONSUME] Room not found" });
@@ -410,13 +412,45 @@ export default class SocketIO {
               return;
             }
 
+            // Check if the producer exists
+            const producerInfo = this.roomManager.getProducer(
+              data.roomId,
+              data.producerId
+            );
+
+            if (!producerInfo) {
+              logger.error(
+                `[Socket:CONSUME] Producer ${data.producerId} not found in any peer`
+              );
+              callback({ error: "Producer not found" });
+              return;
+            }
+
+            logger.info(
+              `[Socket:CONSUME] Found producer ${data.producerId} in peer ${producerInfo.peerId}`
+            );
+
+            // Log RTP capabilities for debugging
+            logger.info(
+              `[Socket:CONSUME] Checking if can consume with RTP capabilities:`,
+              {
+                codecs:
+                  data.rtpCapabilities.codecs?.map(
+                    (c) => `${c.mimeType} (${c.clockRate})`
+                  ) || [],
+              }
+            );
+
             if (
               !room.router.canConsume({
                 producerId: data.producerId,
                 rtpCapabilities: data.rtpCapabilities,
               })
             ) {
-              callback({ error: "Cannot consume" });
+              logger.error(
+                `[Socket:CONSUME] Cannot consume producer ${data.producerId}`
+              );
+              callback({ error: "Cannot consume - RTP capabilities mismatch" });
               return;
             }
 
@@ -449,6 +483,10 @@ export default class SocketIO {
               socket.emit(events.PRODUCER_CLOSED, { consumerId: consumer.id });
             });
 
+            logger.info(
+              `[Socket:CONSUME] Successfully created consumer ${consumer.id} for producer ${data.producerId}`
+            );
+
             callback({
               data: {
                 id: consumer.id,
@@ -463,6 +501,84 @@ export default class SocketIO {
           }
         }
       );
+
+      // socket.on(
+      //   events.CONSUME,
+      //   async (
+      //     data: {
+      //       roomId: string;
+      //       userId: string;
+      //       producerId: string;
+      //       rtpCapabilities: RtpCapabilities;
+      //     },
+      //     callback: (response: { error?: string; data?: any }) => void
+      //   ) => {
+      //     try {
+      //       const room = this.roomManager.getRoom(data.roomId);
+      //       if (!room) {
+      //         callback({ error: "[Socket:CONSUME] Room not found" });
+      //         return;
+      //       }
+
+      //       const peer = this.roomManager.getPeer(data.roomId, data.userId);
+      //       if (!peer) {
+      //         callback({ error: "[Socket:CONSUME] Peer not found" });
+      //         return;
+      //       }
+
+      //       if (
+      //         !room.router.canConsume({
+      //           producerId: data.producerId,
+      //           rtpCapabilities: data.rtpCapabilities,
+      //         })
+      //       ) {
+      //         callback({ error: "Cannot consume" });
+      //         return;
+      //       }
+
+      //       // Find the receive transport
+      //       const transport = Array.from(peer.transports.values()).find(
+      //         (t) => t.appData.type === "receive"
+      //       );
+
+      //       if (!transport) {
+      //         callback({ error: "Receive transport not found" });
+      //         return;
+      //       }
+
+      //       const consumer = await transport.consume({
+      //         producerId: data.producerId,
+      //         rtpCapabilities: data.rtpCapabilities,
+      //         paused: true,
+      //       });
+
+      //       peer.consumers.set(consumer.id, consumer);
+
+      //       consumer.on("transportclose", () => {
+      //         consumer.close();
+      //         peer.consumers.delete(consumer.id);
+      //       });
+
+      //       consumer.on("producerclose", () => {
+      //         consumer.close();
+      //         peer.consumers.delete(consumer.id);
+      //         socket.emit(events.PRODUCER_CLOSED, { consumerId: consumer.id });
+      //       });
+
+      //       callback({
+      //         data: {
+      //           id: consumer.id,
+      //           producerId: data.producerId,
+      //           kind: consumer.kind,
+      //           rtpParameters: consumer.rtpParameters,
+      //         },
+      //       });
+      //     } catch (error) {
+      //       logger.error(`[Socket:CONSUME] Error:`, error);
+      //       callback({ error: "Failed to consume" });
+      //     }
+      //   }
+      // );
 
       socket.on(
         events.RESUME_CONSUMER,

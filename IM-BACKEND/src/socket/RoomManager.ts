@@ -191,6 +191,23 @@ export class RoomManager {
     logger.info(`[MediaSoup] Room closed: ${roomId}`);
   }
 
+  public getProducer(
+    roomId: string,
+    producerId: string
+  ): { producer: Producer; peerId: string } | undefined {
+    const room = this.rooms.get(roomId);
+    if (!room) return undefined;
+
+    for (const [peerId, peer] of Array.from(room.peers.entries())) {
+      const producer = peer.producers.get(producerId);
+      if (producer) {
+        return { producer, peerId };
+      }
+    }
+
+    return undefined;
+  }
+
   public async closePeer(roomId: string, peerId: string): Promise<void> {
     const room = this.rooms.get(roomId);
     if (!room) return;
